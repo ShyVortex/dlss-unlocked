@@ -10,6 +10,10 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 ---
 
+## ⚠️ Requirements
+- DLSS-NR library file (Streamline v310.8 onwards), patched to work with RTX 20xx and 30xx series GPUs: `nvngx_dlssnr.dll`
+- Game that natively supports DLSS Upscaling and DLSS Frame Generation
+
 ## ✨ Features
 
 - **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
