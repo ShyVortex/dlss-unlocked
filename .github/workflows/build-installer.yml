@@ -569,12 +569,9 @@ jobs:
             Copy-Item -Path "Dll version\nvngx.ini" -Destination $optiScalerSubDir -Force
         }
         
-        # Copy DLSSG mod components
+        # Copy DLSSG mod components (excluding _nvngx.dll to prevent Proton/Linux loader deadlocks)
         if (Test-Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll") {
             Copy-Item -Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll" -Destination $optiScalerSubDir -Force
-        }
-        if (Test-Path "DLLSG mod\nvngx.dll") {
-            Copy-Item -Path "DLLSG mod\nvngx.dll" -Destination "$optiScalerSubDir\_nvngx.dll" -Force
         }
         if (Test-Path "DLLSG mod\DisableNvidiaSignatureChecks.reg") {
             Copy-Item -Path "DLLSG mod\DisableNvidiaSignatureChecks.reg" -Destination $optiScalerSubDir -Force
