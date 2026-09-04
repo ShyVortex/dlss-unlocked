@@ -535,10 +535,68 @@ jobs:
         
         # Copy OptiScaler_DLSSNR config and forwarder
         if (Test-Path "Dll version\OptiScaler.ini") {
-            Copy-Item -Path "Dll version\OptiScaler.ini" -Destination $manualZipDir -Force
+            $optiIniContent = Get-Content "Dll version\OptiScaler.ini" -Raw
+            if ($optiIniContent -match '(?m)^FGInput\s*=') {
+                $optiIniContent = $optiIniContent -replace '(?m)^FGInput\s*=.*', 'FGInput=nvngxfg'
+            } else {
+                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGInput=nvngxfg"
+            }
+            if ($optiIniContent -match '(?m)^FGOutput\s*=') {
+                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=auto'
+            } else {
+                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=auto"
+            }
+            if ($optiIniContent -match '(?m)^FGNvngxReplacement\s*=') {
+                $optiIniContent = $optiIniContent -replace '(?m)^FGNvngxReplacement\s*=.*', 'FGNvngxReplacement=Arturs'
+            } else {
+                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
+            }
+            Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
+            Write-Host "Configured OptiScaler.ini for standalone package (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
+        }
+        
+        # Copy DLSS Enabler headless engine (required for FGNvngxReplacement=Arturs / FGInput=nvngxfg)
+        if (Test-Path "Dll version\dlss-enabler.asi") {
+            Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$manualZipDir\dlss-enabler-headless.dll" -Force
+        }
+        if (Test-Path "Dll version\nvngx.ini") {
+            Copy-Item -Path "Dll version\nvngx.ini" -Destination $manualZipDir -Force
+        }
+        
+        # Copy DLSSG mod components
+        if (Test-Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll") {
+            Copy-Item -Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll" -Destination $manualZipDir -Force
+        }
+        if (Test-Path "DLLSG mod\nvngx.dll") {
+            Copy-Item -Path "DLLSG mod\nvngx.dll" -Destination "$manualZipDir\_nvngx.dll" -Force
+        }
+        if (Test-Path "DLLSG mod\DisableNvidiaSignatureChecks.reg") {
+            Copy-Item -Path "DLLSG mod\DisableNvidiaSignatureChecks.reg" -Destination $manualZipDir -Force
+        }
+        if (Test-Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg") {
+            Copy-Item -Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg" -Destination $manualZipDir -Force
+        }
+        
+        # Copy upscaler and FidelityFX / XeSS companion DLLs
+        $companionDlls = @(
+            "amd_fidelityfx_dx12.dll",
+            "amd_fidelityfx_framegeneration_dx12.dll",
+            "amd_fidelityfx_loader_dx12.dll",
+            "amd_fidelityfx_upscaler_dx12.dll",
+            "amd_fidelityfx_vk.dll",
+            "libxess.dll",
+            "libxess_dx11.dll",
+            "libxess_fg.dll",
+            "libxell.dll",
+            "D3D12Core.dll"
+        )
+        foreach ($cDll in $companionDlls) {
+            if (Test-Path "Dll version\$cDll") {
+                Copy-Item -Path "Dll version\$cDll" -Destination $manualZipDir -Force
+            }
         }
         
         # Copy documentation & license files
