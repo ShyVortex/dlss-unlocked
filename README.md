@@ -2,62 +2,76 @@
 
 [![Build Installer](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml/badge.svg)](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml)
 
-Simulate DLSS Upscaler and DLSS-G Frame Generation features on NVIDIA GeForce RTX 20xx/30xx/40xx GPUs in DirectX 12 games that support DLSS2 and DLSS3 natively.
+Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 3X, 4X)**, and **Neural Rendering (DLSS-NR)** upscaling across NVIDIA GeForce RTX 20xx / 30xx / 40xx GPUs in DirectX 12 games. Fully compatible with **Windows** and **Linux (Proton)** out of the box.
 
 <p align="center">
   <img width="960" src="thumbnail.jpeg" alt="DLSS Unlocked Thumbnail">
 </p>
 
-## 🚀 Automated Builds with Latest OptiScaler_DLSSNR
+---
 
-This repository features **automated builds** that keep DLSS-Unlocked up-to-date with the latest [OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR) releases!
+## ✨ Features
 
-### 📦 Download Latest Release
+- **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
+- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to AMD FidelityFX FSR 3.1 Frame Generation (via Nukem9 mod & OptiScaler).
+- **Neural Rendering (DLSS-NR):** Full support for Dagherbou's OptiScaler_DLSSNR upscaling backend and forwarder.
+- **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
+- **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
 
-**Recommended**: Download the latest pre-built installer from the [Releases](../../releases) page. These installers are automatically built with:
-- ✅ Latest OptiScaler_DLSSNR (Neural Rendering model support, latest fixes and features)
-- ✅ Latest XeSS library from Intel
-- ✅ All required components pre-configured
+---
 
-### 🎮 Supported GPUs
+## 📦 Download & Installation
+
+Get the latest release from the **[Releases](../../releases)** page.
+
+### Option A: Automated Installer (`.exe`) — Recommended for Windows
+1. Download `dlss-unlocked-setup-*.exe`.
+2. Run the installer and browse to your game's executable directory (e.g. `C:\Games\YourGame\bin\x64`).
+3. Complete the installation wizard.
+
+### Option B: Standalone Package (`.zip`) — Recommended for Linux / Manual Installs
+1. Download `dlss-unlocked-standalone-*.zip`.
+2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
+   - **Root folder:** `version.dll`, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
+   - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
+
+---
+
+## 🎮 Supported GPUs
 
 - NVIDIA GeForce RTX 20xx / 30xx / 40xx
 
-### 🔄 How Auto-Updates Work
+---
 
-The automated system:
-1. **Monitors** OptiScaler_DLSSNR repository for new releases every 3 hours
-2. **Downloads** the latest release archive from OptiScaler_DLSSNR releases
-3. **Deploys** components including `dlss-unlocked-upscaler.dll`, `OptiScaler.dll`, Neural Rendering forwarder `nvngx.dll_dlssnr.dll`, FidelityFX, and XeSS libraries
-4. **Builds** a new installer using Inno Setup
-5. **Publishes** the installer as a GitHub release
+## 🚀 Automated CI Builds
 
-### 🛠️ Local Updates (Advanced Users)
+This repository automatically tracks and synchronizes with upstream [OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR):
+1. Checks for new releases every 3 hours.
+2. Packages the latest upscaler binaries, neural rendering forwarders, and companion libraries.
+3. Automatically builds and publishes both `.exe` installer and `.zip` standalone manual packages on new releases.
 
-For developers or advanced users who want to build with OptiScaler_DLSSNR manually:
+---
+
+## 🛠️ Building Locally
+
+To build the standalone package or installer locally:
 
 ```powershell
-# Build with specific OptiScaler_DLSSNR archive
-.\build-optiscaler.ps1 -OptiScalerPath "C:\path\to\OptiScaler-DLSSNR-v0.2.0.zip"
+# 1. Download latest OptiScaler_DLSSNR and package standalone zip
+.\build-optiscaler.ps1 -DownloadLatest -CreateStandaloneZip
+
+# 2. Compile Inno Setup installer (requires Inno Setup 6.2+)
+# Open "DLSS unlocked.iss" in Inno Setup Compiler and click Build
 ```
 
-## How to
-
-### How to build a setup application
-
-In order to build the setup application for DLSS Unlocked, you need to install InnoSetup software first ( https://jrsoftware.org/isdl.php ). The most optimal version is 6.2.0 (nothing below, nothing above - mainly due to the craziness of some AVs that raise false positives randomly).
-
-After installing the InnoSetup software, double click "DLSS unlocked.iss" file and edit its contents (such as build version, etc) in InnoSetup Editor.
-
-Before building new package, run `build-optiscaler.ps1` or ensure required DLL files are placed into "Dll version" subdirectory.
-
-After successful build, the resulting setup app will be created inside of "Output" directory.
+---
 
 ## 📜 Credits
 
 - **[DLSS Enabler](https://github.com/artur-graniszewski/DLSS-Enabler)** by Artur Graniszewski
 - **[OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR)** by Dagherbou
-- **[DLSSSpoofer](https://github.com/nitrog0d/DLSSSpoofer)** by NitroG0d
+- **[OptiScaler](https://github.com/cdozdil/OptiScaler)** by cdozdil
 - **[DLSSG to FSR3](https://github.com/Nukem9/dlssg-to-fsr3)** by Nukem9
+- **[DLSSSpoofer](https://github.com/nitrog0d/DLSSSpoofer)** by NitroG0d
 - **[nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy)** by FakeMichau
 - **[d3d12-proxy](https://github.com/cdozdil/d3d12-proxy)** by Nitec
