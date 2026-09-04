@@ -178,8 +178,14 @@ if ($CreateStandaloneZip) {
         } else {
             $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
         }
+        if ($optiIniContent -match '(?m)^ManualInputPolling\s*=') {
+            $optiIniContent = $optiIniContent -replace '(?m)^ManualInputPolling\s*=.*', 'ManualInputPolling=true'
+        } else {
+            $optiIniContent = $optiIniContent -replace '\[Hotfix\]', "[Hotfix]`r`nManualInputPolling=true"
+        }
         Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+        Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
+        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs, ManualInputPolling=true)" -ForegroundColor Gray
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force

@@ -12,6 +12,18 @@ on:
         description: 'Specific OptiScaler_DLSSNR version to use (e.g., v0.2.0-dlssnr, nightly, latest, or leave empty for auto-detect both)'
         required: false
         default: ''
+      tag_name:
+        description: 'Custom tag name for the release (leave empty for auto-generated tag)'
+        required: false
+        default: ''
+      release_type:
+        description: 'Release type (stable: marked as Latest, prerelease: marked as Pre-release, auto: default based on build type)'
+        type: choice
+        options:
+          - 'auto'
+          - 'stable'
+          - 'prerelease'
+        default: 'auto'
       force_build:
         description: 'Force build even if no new version'
         type: boolean
@@ -46,6 +58,8 @@ jobs:
       latest_version: ${{ steps.version_check.outputs.latest_version }}
       latest_download_url: ${{ steps.version_check.outputs.latest_download_url }}
       latest_filename: ${{ steps.version_check.outputs.latest_filename }}
+      custom_tag: ${{ steps.version_check.outputs.custom_tag }}
+      custom_release_type: ${{ steps.version_check.outputs.custom_release_type }}
     
     steps:
     - name: Checkout repository
@@ -304,6 +318,9 @@ jobs:
         }
 
         # Output results
+        $customTag = "${{ github.event.inputs.tag_name }}"
+        $customReleaseType = "${{ github.event.inputs.release_type }}"
+        if (-not $customReleaseType) { $customReleaseType = "auto" }
         echo "should_build_nightly=$($shouldBuildNightly.ToString().ToLower())" >> $env:GITHUB_OUTPUT
         echo "should_build_latest=$($shouldBuildLatest.ToString().ToLower())" >> $env:GITHUB_OUTPUT
         echo "nightly_version=$nightlyVersion" >> $env:GITHUB_OUTPUT
@@ -312,10 +329,14 @@ jobs:
         echo "latest_version=$latestVersion" >> $env:GITHUB_OUTPUT
         echo "latest_download_url=$latestDownloadUrl" >> $env:GITHUB_OUTPUT
         echo "latest_filename=$latestFilename" >> $env:GITHUB_OUTPUT
+        echo "custom_tag=$customTag" >> $env:GITHUB_OUTPUT
+        echo "custom_release_type=$customReleaseType" >> $env:GITHUB_OUTPUT
 
         Write-Host "=== Summary ==="
         Write-Host "Should build nightly: $shouldBuildNightly ($nightlyVersion)"
         Write-Host "Should build latest: $shouldBuildLatest ($latestVersion)"
+        if ($customTag) { Write-Host "Custom release tag: $customTag" }
+        Write-Host "Release type setting: $customReleaseType"
         if ($shouldBuildNightly) { Write-Host "Nightly filename: $nightlyFilename" }
         if ($shouldBuildLatest) { Write-Host "Latest filename: $latestFilename" }
       env:
@@ -606,8 +627,14 @@ jobs:
             } else {
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
             }
+            if ($optiIniContent -match '(?m)^ManualInputPolling\s*=') {
+                $optiIniContent = $optiIniContent -replace '(?m)^ManualInputPolling\s*=.*', 'ManualInputPolling=true'
+            } else {
+                $optiIniContent = $optiIniContent -replace '\[Hotfix\]', "[Hotfix]`r`nManualInputPolling=true"
+            }
             Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini for standalone package (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs)"
+            Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
+            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs, ManualInputPolling=true)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
@@ -680,7 +707,7 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ matrix.build_type == 'nightly' && 'nightly' || needs.check-versions.outputs.latest_version }}
+        tag_name: ${{ needs.check-versions.outputs.custom_tag != '' && needs.check-versions.outputs.custom_tag || (matrix.build_type == 'nightly' && 'nightly' || needs.check-versions.outputs.latest_version) }}
         name: "DLSS Unlocked (${{ matrix.build_type }}) - OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         body: |
           🚀 **DLSS Unlocked** - ${{ matrix.build_type }} build with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
@@ -724,9 +751,9 @@ jobs:
           Output/*.exe
           Output/*.zip
         draft: false
-        prerelease: ${{ matrix.build_type == 'nightly' }}
+        prerelease: ${{ needs.check-versions.outputs.custom_release_type == 'prerelease' || (needs.check-versions.outputs.custom_release_type != 'stable' && matrix.build_type == 'nightly') }}
         generate_release_notes: true
         fail_on_unmatched_files: true
-        make_latest: ${{ matrix.build_type == 'latest' }}
+        make_latest: ${{ needs.check-versions.outputs.custom_release_type == 'stable' || (needs.check-versions.outputs.custom_release_type != 'prerelease' && matrix.build_type == 'latest') }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
