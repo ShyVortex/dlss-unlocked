@@ -96,7 +96,7 @@ jobs:
         }
 
         function Check-ExistingBuild {
-            param($filename)
+            param($tag, $filename)
             try {
                 $headers = @{
                     'Accept' = 'application/vnd.github.v3+json'
@@ -114,11 +114,15 @@ jobs:
                 }
                 
                 $existingRelease = $existingReleases | Where-Object { 
-                    $_.tag_name -match [regex]::Escape($versionFromFilename) -or
-                    $_.name -match [regex]::Escape($versionFromFilename)
+                    ($tag -and ($_.tag_name -eq $tag -or $_.tag_name -eq "v$tag" -or "v$($_.tag_name)" -eq $tag)) -or
+                    ($versionFromFilename -and ($_.tag_name -match [regex]::Escape($versionFromFilename) -or $_.name -match [regex]::Escape($versionFromFilename)))
                 } | Select-Object -First 1
 
-                return $existingRelease -ne $null
+                if ($existingRelease) {
+                    Write-Host "Found existing release in ${{ github.repository }} (tag: '$($existingRelease.tag_name)', title: '$($existingRelease.name)')"
+                    return $true
+                }
+                return $false
             } catch {
                 Write-Host "Could not check existing releases: $($_.Exception.Message)"
                 return $false
@@ -127,7 +131,8 @@ jobs:
 
         # Determine build types to check
         $specificVersion = "${{ github.event.inputs.optiscaler_version }}"
-        $forceValue = "${{ github.event.inputs.force_build }}"
+        $isManualRun = "${{ github.event_name }}" -eq "workflow_dispatch"
+        $forceValue = $isManualRun -or ("${{ github.event.inputs.force_build }}" -eq "true")
         $isScheduledRun = "${{ github.event_name }}" -eq "schedule"
         
         $shouldBuildNightly = $false
@@ -140,8 +145,8 @@ jobs:
         $latestFilename = ""
 
         Write-Host "Event: ${{ github.event_name }}"
+        Write-Host "Manual run: $isManualRun (auto-force rebuild: $forceValue)"
         Write-Host "Specific version: $specificVersion"
-        Write-Host "Force build: $forceValue"
         Write-Host "Scheduled run: $isScheduledRun"
 
         # Handle specific version request (manual workflow_dispatch with specific version)
@@ -151,16 +156,39 @@ jobs:
             if ($release) {
                 $assetInfo = Get-AssetDownloadUrl -release $release
                 if ($assetInfo.url) {
-                    if ($release.prerelease -or $release.tag_name -eq "nightly") {
-                        $shouldBuildNightly = $true
-                        $nightlyVersion = $release.tag_name
-                        $nightlyDownloadUrl = $assetInfo.url
-                        $nightlyFilename = $assetInfo.filename
+                    $isNightlyRelease = $release.prerelease -or $release.tag_name -eq "nightly"
+                    
+                    if ($forceValue -eq "true") {
+                        Write-Host "Force build requested - will build $specificVersion"
+                        if ($isNightlyRelease) {
+                            $shouldBuildNightly = $true
+                            $nightlyVersion = $release.tag_name
+                            $nightlyDownloadUrl = $assetInfo.url
+                            $nightlyFilename = $assetInfo.filename
+                        } else {
+                            $shouldBuildLatest = $true
+                            $latestVersion = $release.tag_name
+                            $latestDownloadUrl = $assetInfo.url
+                            $latestFilename = $assetInfo.filename
+                        }
                     } else {
-                        $shouldBuildLatest = $true
-                        $latestVersion = $release.tag_name
-                        $latestDownloadUrl = $assetInfo.url
-                        $latestFilename = $assetInfo.filename
+                        $hasExisting = Check-ExistingBuild -tag $release.tag_name -filename $assetInfo.filename
+                        if (-not $hasExisting) {
+                            if ($isNightlyRelease) {
+                                $shouldBuildNightly = $true
+                                $nightlyVersion = $release.tag_name
+                                $nightlyDownloadUrl = $assetInfo.url
+                                $nightlyFilename = $assetInfo.filename
+                            } else {
+                                $shouldBuildLatest = $true
+                                $latestVersion = $release.tag_name
+                                $latestDownloadUrl = $assetInfo.url
+                                $latestFilename = $assetInfo.filename
+                            }
+                            Write-Host "New version to build: $($release.tag_name) ($($assetInfo.filename))"
+                        } else {
+                            Write-Host "Release with tag '$($release.tag_name)' already exists in repository - skipping build."
+                        }
                     }
                 }
             }
@@ -173,10 +201,22 @@ jobs:
                 $assetInfo = Get-AssetDownloadUrl -release $nightlyRelease
                 
                 if ($assetInfo.url) {
-                    $shouldBuildNightly = $true
-                    $nightlyDownloadUrl = $assetInfo.url
-                    $nightlyFilename = $assetInfo.filename
-                    Write-Host "Manual nightly build: $nightlyVersion ($nightlyFilename)"
+                    if ($forceValue -eq "true") {
+                        $shouldBuildNightly = $true
+                        $nightlyDownloadUrl = $assetInfo.url
+                        $nightlyFilename = $assetInfo.filename
+                        Write-Host "Force build - manual nightly build: $nightlyVersion ($nightlyFilename)"
+                    } else {
+                        $hasExisting = Check-ExistingBuild -tag "nightly" -filename $assetInfo.filename
+                        if (-not $hasExisting) {
+                            $shouldBuildNightly = $true
+                            $nightlyDownloadUrl = $assetInfo.url
+                            $nightlyFilename = $assetInfo.filename
+                            Write-Host "New nightly version found: $nightlyVersion ($nightlyFilename)"
+                        } else {
+                            Write-Host "Nightly $nightlyVersion already built - skipping build."
+                        }
+                    }
                 }
             }
         } elseif ($specificVersion -eq "latest") {
@@ -188,10 +228,22 @@ jobs:
                 $assetInfo = Get-AssetDownloadUrl -release $latestRelease
                 
                 if ($assetInfo.url) {
-                    $shouldBuildLatest = $true
-                    $latestDownloadUrl = $assetInfo.url
-                    $latestFilename = $assetInfo.filename
-                    Write-Host "Manual latest build: $latestVersion ($latestFilename)"
+                    if ($forceValue -eq "true") {
+                        $shouldBuildLatest = $true
+                        $latestDownloadUrl = $assetInfo.url
+                        $latestFilename = $assetInfo.filename
+                        Write-Host "Force build - manual latest build: $latestVersion ($latestFilename)"
+                    } else {
+                        $hasExisting = Check-ExistingBuild -tag $latestRelease.tag_name -filename $assetInfo.filename
+                        if (-not $hasExisting) {
+                            $shouldBuildLatest = $true
+                            $latestDownloadUrl = $assetInfo.url
+                            $latestFilename = $assetInfo.filename
+                            Write-Host "New latest version found: $latestVersion ($latestFilename)"
+                        } else {
+                            Write-Host "Release with tag '$($latestRelease.tag_name)' already built - skipping build."
+                        }
+                    }
                 }
             }
         } else {
@@ -213,12 +265,12 @@ jobs:
                         $shouldBuildNightly = $true
                         Write-Host "Force build - will build nightly $nightlyVersion"
                     } else {
-                        $hasExisting = Check-ExistingBuild -filename $nightlyFilename
+                        $hasExisting = Check-ExistingBuild -tag "nightly" -filename $nightlyFilename
                         if (-not $hasExisting) {
                             $shouldBuildNightly = $true
                             Write-Host "New nightly version found: $nightlyVersion ($nightlyFilename)"
                         } else {
-                            Write-Host "Nightly $nightlyVersion already built - skipping"
+                            Write-Host "Nightly $nightlyVersion already built - skipping build."
                         }
                     }
                 }
@@ -239,12 +291,12 @@ jobs:
                         $shouldBuildLatest = $true
                         Write-Host "Force build - will build latest $latestVersion"
                     } else {
-                        $hasExisting = Check-ExistingBuild -filename $latestFilename
+                        $hasExisting = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
                         if (-not $hasExisting) {
                             $shouldBuildLatest = $true
                             Write-Host "New latest version found: $latestVersion ($latestFilename)"
                         } else {
-                            Write-Host "Latest $latestVersion already built - skipping"
+                            Write-Host "Latest release with tag '$latestVersion' already built - skipping build."
                         }
                     }
                 }
