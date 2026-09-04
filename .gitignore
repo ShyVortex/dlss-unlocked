@@ -8,17 +8,33 @@ Output/
 *.temp
 *.log
 *.bak
+temp_optiscaler/
 
 # Extracted archives
 extracted/
 temp_extract/
 
-# Files sourced from OptiScaler releases (downloaded during CI)
-Dll version/dlss-enabler-upscaler.dll
-Dll version/libxess.dll
-Dll version/amd_fidelityfx_dx12.dll
-Dll version/amd_fidelityfx_vk.dll
+# Files sourced from OptiScaler_DLSSNR releases (downloaded during CI / build)
+Dll version/dlss-unlocked-upscaler.dll
+Dll version/OptiScaler.dll
+Dll version/version.dll
+Dll version/nvngx.dll_dlssnr.dll
 Dll version/OptiScaler.ini
+Dll version/libxess.dll
+Dll version/libxess_dx11.dll
+Dll version/libxess_fg.dll
+Dll version/libxell.dll
+Dll version/amd_fidelityfx_dx12.dll
+Dll version/amd_fidelityfx_framegeneration_dx12.dll
+Dll version/amd_fidelityfx_loader_dx12.dll
+Dll version/amd_fidelityfx_upscaler_dx12.dll
+Dll version/amd_fidelityfx_vk.dll
+Dll version/D3D12Core.dll
+Dll version/XeSS_LICENSE.txt
+Dll version/FidelityFX_LICENSE.md
+Dll version/FidelityFX_v2_LICENSE.md
+Dll version/DirectX_LICENSE.txt
+Dll version/RenoDX_ATTRIBUTION.txt
 DLLSG mod/DisableNvidiaSignatureChecks.reg
 DLLSG mod/RestoreNvidiaSignatureChecks.reg
 
@@ -54,7 +70,6 @@ ehthumbs.db
 # Auto-generated version files
 version.txt
 build_info.txt
-
 
 PR_DESCRIPTION.md
 COMMIT_MESSAGE.md

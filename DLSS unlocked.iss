@@ -127,10 +127,10 @@ Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}/licenses"; Flags: ign
 Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}/licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: upscalers
 
 ; main module
-Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}/plugins"; DestName: "dlss-unlocked.asi"; Flags: confirmoverwrite; Components: mainfiles/asiversion
-Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}"; DestName: "dlss-unlocked.dll"; Flags: confirmoverwrite; Components: mainfiles/dlldxgi
-Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}"; DestName: "version.dll"; Flags: confirmoverwrite; Components: mainfiles/dllversion
-Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: confirmoverwrite; Components: mainfiles/dllwinmm
+Source: "Dll version\version.dll"; DestDir: "{app}/plugins"; DestName: "dlss-unlocked.asi"; Flags: confirmoverwrite; Components: mainfiles/asiversion
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "dlss-unlocked.dll"; Flags: confirmoverwrite; Components: mainfiles/dlldxgi
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: confirmoverwrite; Components: mainfiles/dllversion
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: confirmoverwrite; Components: mainfiles/dllwinmm
 
 ; common docs
 Source: "Readme (DLSS unlocked).txt"; DestDir: "{app}"; Flags: ignoreversion deleteafterinstall; Components: mainfiles/dllwinmm mainfiles/dllversion mainfiles/asiversion mainfiles/dlldxgi

@@ -513,8 +513,20 @@ jobs:
         if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
         New-Item -ItemType Directory -Path $manualZipDir -Force
         
-        # Copy core version.dll from dlss-enabler.asi
-        Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$manualZipDir\version.dll" -Force
+        # Copy OptiScaler_DLSSNR monolithic engine as version.dll
+        $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
+        if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "version.dll" -File | Select-Object -First 1
+        }
+        Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\version.dll" -Force
+        
+        # Copy OptiScaler_DLSSNR config and forwarder
+        if (Test-Path "Dll version\OptiScaler.ini") {
+            Copy-Item -Path "Dll version\OptiScaler.ini" -Destination $manualZipDir -Force
+        }
+        if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
+            Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
+        }
         
         # Copy documentation & license files
         if (Test-Path "Readme (DLSS unlocked).txt") {
@@ -531,7 +543,7 @@ jobs:
         $zipOutputPath = "Output\$zipOutputName"
         
         Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
-        Write-Host "Created standalone zip package: $zipOutputPath"
+        Write-Host "Created OptiScaler_DLSSNR monolithic standalone zip: $zipOutputPath"
         Get-Item $zipOutputPath | Format-List Name, Length
 
     - name: Get current date
