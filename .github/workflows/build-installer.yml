@@ -627,29 +627,9 @@ jobs:
             } else {
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
             }
-            if ($optiIniContent -match '(?m)^ManualInputPolling\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^ManualInputPolling\s*=.*', 'ManualInputPolling=true'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[Hotfix\]', "[Hotfix]`r`nManualInputPolling=true"
-            }
-            if ($optiIniContent -match '(?m)^UseHQFont\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^UseHQFont\s*=.*', 'UseHQFont=false'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[Menu\]', "[Menu]`r`nUseHQFont=false"
-            }
-            if ($optiIniContent -match '(?m)^HUDFixDontUseSwapchainBuffers\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^HUDFixDontUseSwapchainBuffers\s*=.*', 'HUDFixDontUseSwapchainBuffers=true'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nHUDFixDontUseSwapchainBuffers=true"
-            }
-            if ($optiIniContent -match '(?m)^UseMutexForSwapchain\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^UseMutexForSwapchain\s*=.*', 'UseMutexForSwapchain=false'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nUseMutexForSwapchain=false"
-            }
             Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs, ManualInputPolling=true, UseHQFont=false, HUDFixDontUseSwapchainBuffers=true, UseMutexForSwapchain=false)"
+            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
