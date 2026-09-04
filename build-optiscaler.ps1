@@ -4,7 +4,8 @@
 param(
     [string]$OptiScalerPath = "",
     [string]$OptiScalerVersion = "v0.2.0-dlssnr",
-    [switch]$DownloadLatest = $false
+    [switch]$DownloadLatest = $false,
+    [switch]$CreateStandaloneZip = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -138,6 +139,26 @@ Write-Host "OptiScaler_DLSSNR files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
+
+if ($CreateStandaloneZip) {
+    Write-Host "Creating standalone manual package (version.dll zip)..." -ForegroundColor Yellow
+    $manualZipDir = Join-Path $TempDir "manual_package"
+    if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $manualZipDir | Out-Null
+
+    Copy-Item -Path "$DllVersionDir\dlss-enabler.asi" -Destination "$manualZipDir\version.dll" -Force
+    if (Test-Path "Readme (DLSS unlocked).txt") {
+        Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $manualZipDir -Force
+    }
+    if (Test-Path "License (DLSS unlocked).txt") {
+        Copy-Item -Path "License (DLSS unlocked).txt" -Destination $manualZipDir -Force
+    }
+
+    if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
+    $zipOutputPath = "Output\dlss-unlocked-standalone.zip"
+    Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
+    Write-Host "Standalone zip created at: $zipOutputPath" -ForegroundColor Green
+}
 
 Write-Host ""
 Write-Host "You can now compile the installer with Inno Setup using 'DLSS unlocked.iss'." -ForegroundColor Green

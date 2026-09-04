@@ -499,6 +499,41 @@ jobs:
       with:
         path: "DLSS unlocked.iss"
 
+    - name: Create standalone manual package (version.dll zip)
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        $filename = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}"
+        $versionPart = "v1.0"
+        if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
+            $versionPart = $matches[1]
+        }
+        
+        $manualZipDir = "$env:TEMP\manual_package"
+        if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $manualZipDir -Force
+        
+        # Copy core version.dll from dlss-enabler.asi
+        Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$manualZipDir\version.dll" -Force
+        
+        # Copy documentation & license files
+        if (Test-Path "Readme (DLSS unlocked).txt") {
+            Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $manualZipDir -Force
+        }
+        if (Test-Path "License (DLSS unlocked).txt") {
+            Copy-Item -Path "License (DLSS unlocked).txt" -Destination $manualZipDir -Force
+        }
+        
+        # Ensure Output directory exists
+        if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
+        
+        $zipOutputName = "dlss-unlocked-standalone_$versionPart.zip"
+        $zipOutputPath = "Output\$zipOutputName"
+        
+        Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
+        Write-Host "Created standalone zip package: $zipOutputPath"
+        Get-Item $zipOutputPath | Format-List Name, Length
+
     - name: Get current date
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       id: date
@@ -509,7 +544,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: dlss-unlocked-${{ matrix.build_type }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
-        path: Output/*.exe
+        path: |
+          Output/*.exe
+          Output/*.zip
         retention-days: 30
 
     - name: Create release
@@ -522,8 +559,9 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ matrix.build_type }} build with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
+          - **Automated Setup (`.exe`)**: All-in-one installer that configures and deploys `version.dll`, OptiScaler_DLSSNR, DLSSG-to-FSR3, and NVIDIA runtime components.
+          - **Standalone Archive (`.zip`)**: Contains standalone `version.dll` and documentation for manual installation.
           - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-          - **OptiScaler Package**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}`
           - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
@@ -531,11 +569,14 @@ jobs:
           - **Registry Overrides**: Latest signature override scripts
           
           ## 🔧 Installation
-          1. Download the installer below
+          ### Option A: Setup Installer (Recommended)
+          1. Download `dlss-unlocked-setup-*.exe`
           2. Run the setup and select your game directory
-          3. Choose installation type based on your needs:
-             - **Preferred installation (DLL package)**: Recommended for most users
-             - **Troubleshooting / Custom**: For specific game mod setups
+          3. Complete the installation wizard
+          
+          ### Option B: Manual Installation
+          1. Download `dlss-unlocked-standalone-*.zip`
+          2. Extract `version.dll` into your game directory (alongside the game `.exe`)
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
@@ -552,7 +593,9 @@ jobs:
           
           ---
           Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-        files: Output/*.exe
+        files: |
+          Output/*.exe
+          Output/*.zip
         draft: false
         prerelease: ${{ matrix.build_type == 'nightly' }}
         generate_release_notes: true
