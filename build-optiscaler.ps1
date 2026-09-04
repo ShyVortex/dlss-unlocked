@@ -1,26 +1,60 @@
-# DLSS-Enabler OptiScaler Build Script
-# This script downloads the latest OptiScaler release and copies files to the correct build locations
+# DLSS-Unlocked OptiScaler_DLSSNR Build Script
+# This script downloads or extracts OptiScaler_DLSSNR releases and copies files to the build structure
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.7.7-pre12",
+    [string]$OptiScalerVersion = "v0.2.0-dlssnr",
     [switch]$DownloadLatest = $false
 )
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "DLSS-Enabler OptiScaler Build Script" -ForegroundColor Green
-Write-Host "====================================" -ForegroundColor Green
+Write-Host "DLSS-Unlocked OptiScaler_DLSSNR Build Script" -ForegroundColor Green
+Write-Host "===========================================" -ForegroundColor Green
 
-# Determine OptiScaler archive path
-if ($OptiScalerPath -eq "") {
-    if ($DownloadLatest) {
-        Write-Host "Downloading latest OptiScaler release..." -ForegroundColor Yellow
-        # TODO: Add download logic here
-        Write-Host "Error: Download functionality not implemented yet. Please provide -OptiScalerPath" -ForegroundColor Red
-        exit 1
-    } else {
-        $OptiScalerPath = "C:\Users\ewojcik\Downloads\OptiScaler_v0.7.7-pre12_20250630.7z"
+$Repo = "Dagherbou/OptiScaler_DLSSNR"
+$TempDir = "temp_optiscaler"
+
+# Determine OptiScaler archive path or download
+if ($OptiScalerPath -eq "" -or $DownloadLatest) {
+    Write-Host "Fetching release information from $Repo..." -ForegroundColor Yellow
+    $headers = @{
+        'Accept' = 'application/vnd.github.v3+json'
+        'User-Agent' = 'DLSS-Unlocked'
+    }
+    
+    try {
+        if ($OptiScalerVersion -and $OptiScalerVersion -ne "latest" -and -not $DownloadLatest) {
+            $url = "https://api.github.com/repos/$Repo/releases/tags/$OptiScalerVersion"
+            $release = Invoke-RestMethod -Uri $url -Headers $headers
+        } else {
+            $url = "https://api.github.com/repos/$Repo/releases/latest"
+            $release = Invoke-RestMethod -Uri $url -Headers $headers
+        }
+        
+        $asset = $release.assets | Where-Object { 
+            $_.name -match "OptiScaler.*\.zip$" -or $_.name -match "OptiScaler.*\.7z$" 
+        } | Select-Object -First 1
+
+        if (-not $asset) {
+            Write-Host "Error: Could not find OptiScaler asset in release" -ForegroundColor Red
+            exit 1
+        }
+
+        if (!(Test-Path $TempDir)) {
+            New-Item -ItemType Directory -Path $TempDir | Out-Null
+        }
+
+        $OptiScalerPath = Join-Path $TempDir $asset.name
+        Write-Host "Downloading $($asset.name) from $($asset.browser_download_url)..." -ForegroundColor Yellow
+        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $OptiScalerPath -UseBasicParsing
+        Write-Host "Download complete: $OptiScalerPath" -ForegroundColor Green
+    } catch {
+        Write-Host "Failed to download from GitHub API: $($_.Exception.Message)" -ForegroundColor Yellow
+        if ($OptiScalerPath -eq "" -or !(Test-Path $OptiScalerPath)) {
+            Write-Host "Error: Please specify a valid -OptiScalerPath" -ForegroundColor Red
+            exit 1
+        }
     }
 }
 
@@ -32,18 +66,18 @@ if (!(Test-Path $OptiScalerPath)) {
 
 Write-Host "Using OptiScaler archive: $OptiScalerPath" -ForegroundColor Cyan
 
-# Use existing or create temporary extraction directory
-$TempDir = "temp_optiscaler"
-if (!(Test-Path $TempDir)) {
-    Write-Host "Extracting OptiScaler archive..." -ForegroundColor Yellow
-    & 7z x $OptiScalerPath -o$TempDir -y | Out-Null
+# Extraction directory
+$ExtractDir = Join-Path $TempDir "extracted"
+if (Test-Path $ExtractDir) {
+    Remove-Item -Path $ExtractDir -Recurse -Force
+}
+New-Item -ItemType Directory -Path $ExtractDir | Out-Null
 
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: Failed to extract OptiScaler archive" -ForegroundColor Red
-        exit 1
-    }
+Write-Host "Extracting OptiScaler archive..." -ForegroundColor Yellow
+if ($OptiScalerPath -match "\.7z$") {
+    & 7z x $OptiScalerPath -o"$ExtractDir" -y | Out-Null
 } else {
-    Write-Host "Using existing extracted OptiScaler files..." -ForegroundColor Yellow
+    Expand-Archive -Path $OptiScalerPath -DestinationPath $ExtractDir -Force
 }
 
 # Ensure Dll version directory exists
@@ -52,43 +86,58 @@ if (!(Test-Path $DllVersionDir)) {
     New-Item -ItemType Directory -Path $DllVersionDir | Out-Null
 }
 
-Write-Host "Copying OptiScaler files to build structure..." -ForegroundColor Yellow
+Write-Host "Copying OptiScaler_DLSSNR files to build structure..." -ForegroundColor Yellow
 
-# Define file mappings: Source -> Destination
-$FileMappings = @{
-    "$TempDir\OptiScaler.dll" = "$DllVersionDir\dlss-enabler-upscaler.dll"
-    "$TempDir\OptiScaler.ini" = "$DllVersionDir\OptiScaler.ini"
-    "$TempDir\libxess.dll" = "$DllVersionDir\libxess.dll"
-    "$TempDir\libxess_dx11.dll" = "$DllVersionDir\libxess_dx11.dll"
-    "$TempDir\amd_fidelityfx_dx12.dll" = "$DllVersionDir\amd_fidelityfx_dx12.dll"
-    "$TempDir\amd_fidelityfx_vk.dll" = "$DllVersionDir\amd_fidelityfx_vk.dll"
-    "$TempDir\D3D12_Optiscaler\D3D12Core.dll" = "$DllVersionDir\D3D12Core.dll"
-    "$TempDir\Licenses\XeSS_LICENSE.txt" = "$DllVersionDir\XeSS_LICENSE.txt"
-    "$TempDir\Licenses\FidelityFX_LICENSE.md" = "$DllVersionDir\FidelityFX_LICENSE.md"
-    "$TempDir\Licenses\DirectX_LICENSE.txt" = "$DllVersionDir\DirectX_LICENSE.txt"
-}
-
-# Copy files
-foreach ($mapping in $FileMappings.GetEnumerator()) {
-    $source = $mapping.Key
-    $dest = $mapping.Value
-    
-    if (Test-Path $source) {
-        Write-Host "  $source -> $dest" -ForegroundColor Gray
-        Copy-Item $source $dest -Force
+# Helper to find and copy file recursively
+function Copy-ExtractedFile {
+    param(
+        [string]$Pattern,
+        [string]$DestinationName
+    )
+    $found = Get-ChildItem -Path $ExtractDir -Filter $Pattern -Recurse -File | Select-Object -First 1
+    if ($found) {
+        $destPath = Join-Path $DllVersionDir $DestinationName
+        Copy-Item -Path $found.FullName -Destination $destPath -Force
+        Write-Host "  $($found.Name) -> $destPath" -ForegroundColor Gray
     } else {
-        Write-Host "  Warning: Source file not found: $source" -ForegroundColor Yellow
+        Write-Host "  Warning: Not found: $Pattern" -ForegroundColor Yellow
     }
 }
 
-Write-Host "Cleaning up..." -ForegroundColor Yellow
-# Don't remove the temp directory as it might be needed for future builds
+# Copy OptiScaler main binaries
+Copy-ExtractedFile -Pattern "OptiScaler.dll" -DestinationName "dlss-unlocked-upscaler.dll"
+Copy-ExtractedFile -Pattern "OptiScaler.dll" -DestinationName "OptiScaler.dll"
+Copy-ExtractedFile -Pattern "nvngx.dll_dlssnr.dll" -DestinationName "nvngx.dll_dlssnr.dll"
+Copy-ExtractedFile -Pattern "OptiScaler.ini" -DestinationName "OptiScaler.ini"
+
+# Copy XeSS and XeLL
+Copy-ExtractedFile -Pattern "libxess.dll" -DestinationName "libxess.dll"
+Copy-ExtractedFile -Pattern "libxess_dx11.dll" -DestinationName "libxess_dx11.dll"
+Copy-ExtractedFile -Pattern "libxess_fg.dll" -DestinationName "libxess_fg.dll"
+Copy-ExtractedFile -Pattern "libxell.dll" -DestinationName "libxell.dll"
+
+# Copy FidelityFX
+Copy-ExtractedFile -Pattern "amd_fidelityfx_dx12.dll" -DestinationName "amd_fidelityfx_dx12.dll"
+Copy-ExtractedFile -Pattern "amd_fidelityfx_framegeneration_dx12.dll" -DestinationName "amd_fidelityfx_framegeneration_dx12.dll"
+Copy-ExtractedFile -Pattern "amd_fidelityfx_loader_dx12.dll" -DestinationName "amd_fidelityfx_loader_dx12.dll"
+Copy-ExtractedFile -Pattern "amd_fidelityfx_upscaler_dx12.dll" -DestinationName "amd_fidelityfx_upscaler_dx12.dll"
+Copy-ExtractedFile -Pattern "amd_fidelityfx_vk.dll" -DestinationName "amd_fidelityfx_vk.dll"
+
+# Copy D3D12Core
+Copy-ExtractedFile -Pattern "D3D12Core.dll" -DestinationName "D3D12Core.dll"
+
+# Copy Licenses
+Copy-ExtractedFile -Pattern "XeSS_LICENSE.txt" -DestinationName "XeSS_LICENSE.txt"
+Copy-ExtractedFile -Pattern "FidelityFX_LICENSE.md" -DestinationName "FidelityFX_LICENSE.md"
+Copy-ExtractedFile -Pattern "FidelityFX_v2_LICENSE.md" -DestinationName "FidelityFX_v2_LICENSE.md"
+Copy-ExtractedFile -Pattern "DirectX_LICENSE.txt" -DestinationName "DirectX_LICENSE.txt"
+Copy-ExtractedFile -Pattern "RenoDX_ATTRIBUTION.txt" -DestinationName "RenoDX_ATTRIBUTION.txt"
 
 Write-Host ""
-Write-Host "OptiScaler files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler_DLSSNR files copied successfully!" -ForegroundColor Green
 Write-Host ""
-Write-Host "Build directory contents:" -ForegroundColor Cyan
+Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
 Write-Host ""
-Write-Host "You can now compile the installer with Inno Setup." -ForegroundColor Green
+Write-Host "You can now compile the installer with Inno Setup using 'DLSS unlocked.iss'." -ForegroundColor Green

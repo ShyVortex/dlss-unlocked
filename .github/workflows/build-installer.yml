@@ -1,7 +1,7 @@
-name: Build DLSS-Enabler Installer
+name: Build DLSS-Unlocked Installer
 
 on:
-  # Trigger on schedule to check for new OptiScaler releases every 3 hours
+  # Trigger on schedule to check for new OptiScaler_DLSSNR releases every 3 hours
   schedule:
     - cron: '0 */3 * * *'  # Run every 3 hours
   
@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       optiscaler_version:
-        description: 'Specific OptiScaler version to use (e.g., v0.7.7-pre12, nightly, latest, or leave empty for auto-detect both)'
+        description: 'Specific OptiScaler_DLSSNR version to use (e.g., v0.2.0-dlssnr, nightly, latest, or leave empty for auto-detect both)'
         required: false
         default: ''
       force_build:
@@ -31,7 +31,7 @@ permissions:
   actions: read
 
 env:
-  OPTISCALER_REPO: optiscaler/OptiScaler
+  OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
 
 jobs:
   check-versions:
@@ -52,7 +52,7 @@ jobs:
       with:
         fetch-depth: 0
 
-    - name: Check OptiScaler versions and determine if build needed
+    - name: Check OptiScaler_DLSSNR versions and determine if build needed
       id: version_check
       shell: powershell
       run: |
@@ -61,7 +61,7 @@ jobs:
             param($repo, $tag)
             $headers = @{
                 'Accept' = 'application/vnd.github.v3+json'
-                'User-Agent' = 'DLSS-Enabler-Bot'
+                'User-Agent' = 'DLSS-Unlocked-Bot'
             }
             if ($env:GITHUB_TOKEN) {
                 $headers['Authorization'] = "token $env:GITHUB_TOKEN"
@@ -99,12 +99,12 @@ jobs:
             try {
                 $existingReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases" -Headers @{
                     'Accept' = 'application/vnd.github.v3+json'
-                    'User-Agent' = 'DLSS-Enabler-Bot'
+                    'User-Agent' = 'DLSS-Unlocked-Bot'
                 }
                 
-                # Extract version from filename (e.g., OptiScaler_v0.7.7-pre12_20250630.7z -> v0.7.7-pre12_20250630)
+                # Extract version from filename (e.g., OptiScaler-DLSSNR-v0.2.0.zip -> v0.2.0)
                 $versionFromFilename = ""
-                if ($filename -match "OptiScaler_(.+)\.(?:7z|zip)$") {
+                if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
                     $versionFromFilename = $matches[1]
                 }
                 
@@ -293,11 +293,20 @@ jobs:
       id: cache-optiscaler
       with:
         path: |
-          Dll version/dlss-enabler-upscaler.dll
+          Dll version/dlss-unlocked-upscaler.dll
+          Dll version/OptiScaler.dll
+          Dll version/nvngx.dll_dlssnr.dll
           Dll version/OptiScaler.ini
           Dll version/libxess.dll
+          Dll version/libxess_dx11.dll
+          Dll version/libxess_fg.dll
+          Dll version/libxell.dll
           Dll version/amd_fidelityfx_dx12.dll
+          Dll version/amd_fidelityfx_framegeneration_dx12.dll
+          Dll version/amd_fidelityfx_loader_dx12.dll
+          Dll version/amd_fidelityfx_upscaler_dx12.dll
           Dll version/amd_fidelityfx_vk.dll
+          Dll version/D3D12Core.dll
           DLLSG mod/DisableNvidiaSignatureChecks.reg
           DLLSG mod/RestoreNvidiaSignatureChecks.reg
         key: optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ hashFiles('Dll version/nvngx.ini') }}
@@ -305,7 +314,7 @@ jobs:
           optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
           optiscaler-
 
-    - name: Download and extract OptiScaler
+    - name: Download and extract OptiScaler_DLSSNR
       if: steps.cache-optiscaler.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       shell: powershell
       run: |
@@ -313,7 +322,7 @@ jobs:
         $version = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         $buildType = "${{ matrix.build_type }}"
         
-        Write-Host "Downloading OptiScaler $buildType ($version) from: $downloadUrl"
+        Write-Host "Downloading OptiScaler_DLSSNR $buildType ($version) from: $downloadUrl"
         
         # Create temp directory
         $tempDir = "$env:TEMP\optiscaler"
@@ -376,104 +385,62 @@ jobs:
         
         Write-Host "Extracted to: $extractDir"
         
-        # List all extracted files for debugging
-        Write-Host "Archive contents:"
-        Get-ChildItem -Path $extractDir -Recurse | ForEach-Object { 
-            $relativePath = $_.FullName.Replace($extractDir, "").TrimStart('\')
-            Write-Host "  $relativePath" 
+        # Helper function for copying extracted files
+        function Copy-ExtractedFile {
+            param(
+                [string]$Filter,
+                [string]$DestinationPath
+            )
+            $found = Get-ChildItem -Path $extractDir -Filter $Filter -Recurse -File | Select-Object -First 1
+            if ($found) {
+                Copy-Item -Path $found.FullName -Destination $DestinationPath -Force
+                Write-Host "Copied $($found.Name) to $DestinationPath"
+            } else {
+                Write-Warning "File not found: $Filter"
+            }
         }
+
+        # Copy OptiScaler main binaries
+        Copy-ExtractedFile -Filter "OptiScaler.dll" -DestinationPath "Dll version\dlss-unlocked-upscaler.dll"
+        Copy-ExtractedFile -Filter "OptiScaler.dll" -DestinationPath "Dll version\OptiScaler.dll"
+        Copy-ExtractedFile -Filter "nvngx.dll_dlssnr.dll" -DestinationPath "Dll version\nvngx.dll_dlssnr.dll"
+        Copy-ExtractedFile -Filter "OptiScaler.ini" -DestinationPath "Dll version\OptiScaler.ini"
         
-        # Copy main OptiScaler.dll as dlss-enabler-upscaler.dll
-        $optiScalerFile = Get-ChildItem -Path $extractDir -Filter "OptiScaler.dll" -Recurse | Select-Object -First 1
-        if (-not $optiScalerFile) {
-            Write-Error "Could not find OptiScaler.dll in archive"
-            exit 1
-        }
-        
-        $targetPath = "Dll version\dlss-enabler-upscaler.dll"
-        Copy-Item -Path $optiScalerFile.FullName -Destination $targetPath -Force
-        Write-Host "Copied OptiScaler.dll to: $targetPath"
-        
-        # Copy OptiScaler.ini
-        $optiScalerIniFile = Get-ChildItem -Path $extractDir -Filter "OptiScaler.ini" -Recurse | Select-Object -First 1
-        if ($optiScalerIniFile) {
-            $targetIniPath = "Dll version\OptiScaler.ini"
-            Copy-Item -Path $optiScalerIniFile.FullName -Destination $targetIniPath -Force
-            Write-Host "Copied OptiScaler.ini to: $targetIniPath"
-        }
-        
-        # Copy libxess.dll
-        $libxessFile = Get-ChildItem -Path $extractDir -Filter "libxess.dll" -Recurse | Select-Object -First 1
-        if ($libxessFile) {
-            $targetLibxessPath = "Dll version\libxess.dll"
-            Copy-Item -Path $libxessFile.FullName -Destination $targetLibxessPath -Force
-            Write-Host "Copied libxess.dll to: $targetLibxessPath"
-        }
-        
-        # Copy AMD FidelityFX DLLs (newer versions from OptiScaler)
-        $amdDx12File = Get-ChildItem -Path $extractDir -Filter "amd_fidelityfx_dx12.dll" -Recurse | Select-Object -First 1
-        if ($amdDx12File) {
-            $targetAmdDx12Path = "Dll version\amd_fidelityfx_dx12.dll"
-            Copy-Item -Path $amdDx12File.FullName -Destination $targetAmdDx12Path -Force
-            Write-Host "Copied amd_fidelityfx_dx12.dll to: $targetAmdDx12Path"
-        }
-        
-        $amdVkFile = Get-ChildItem -Path $extractDir -Filter "amd_fidelityfx_vk.dll" -Recurse | Select-Object -First 1
-        if ($amdVkFile) {
-            $targetAmdVkPath = "Dll version\amd_fidelityfx_vk.dll"
-            Copy-Item -Path $amdVkFile.FullName -Destination $targetAmdVkPath -Force
-            Write-Host "Copied amd_fidelityfx_vk.dll to: $targetAmdVkPath"
-        }
-        
-        # Copy DLLS Override registry files (newer versions from OptiScaler)
-        $disableRegFile = Get-ChildItem -Path $extractDir -Filter "DisableSignatureOverride.reg" -Recurse | Select-Object -First 1
-        if ($disableRegFile) {
-            $targetDisablePath = "DLLSG mod\DisableNvidiaSignatureChecks.reg"
-            Copy-Item -Path $disableRegFile.FullName -Destination $targetDisablePath -Force
-            Write-Host "Copied DisableSignatureOverride.reg to: $targetDisablePath"
-        }
-        
-        $enableRegFile = Get-ChildItem -Path $extractDir -Filter "EnableSignatureOverride.reg" -Recurse | Select-Object -First 1
-        if ($enableRegFile) {
-            $targetEnablePath = "DLLSG mod\RestoreNvidiaSignatureChecks.reg"
-            Copy-Item -Path $enableRegFile.FullName -Destination $targetEnablePath -Force
-            Write-Host "Copied EnableSignatureOverride.reg to: $targetEnablePath"
-        }
-        
-        # Copy license files from OptiScaler
-        $xessLicenseFile = Get-ChildItem -Path $extractDir -Filter "XeSS_LICENSE.txt" -Recurse | Select-Object -First 1
-        if ($xessLicenseFile) {
-            $targetXessPath = "Dll version\XeSS_LICENSE.txt"
-            Copy-Item -Path $xessLicenseFile.FullName -Destination $targetXessPath -Force
-            Write-Host "Copied XeSS_LICENSE.txt to: $targetXessPath"
-        }
-        
-        $fidelityFxLicenseFile = Get-ChildItem -Path $extractDir -Filter "FidelityFX_LICENSE.md" -Recurse | Select-Object -First 1
-        if ($fidelityFxLicenseFile) {
-            $targetFidelityFxPath = "Dll version\FidelityFX_LICENSE.md"
-            Copy-Item -Path $fidelityFxLicenseFile.FullName -Destination $targetFidelityFxPath -Force
-            Write-Host "Copied FidelityFX_LICENSE.md to: $targetFidelityFxPath"
-        }
-        
-        $directXLicenseFile = Get-ChildItem -Path $extractDir -Filter "DirectX_LICENSE.txt" -Recurse | Select-Object -First 1
-        if ($directXLicenseFile) {
-            $targetDirectXPath = "Dll version\DirectX_LICENSE.txt"
-            Copy-Item -Path $directXLicenseFile.FullName -Destination $targetDirectXPath -Force
-            Write-Host "Copied DirectX_LICENSE.txt to: $targetDirectXPath"
-        }
-        
+        # Copy XeSS and XeLL
+        Copy-ExtractedFile -Filter "libxess.dll" -DestinationPath "Dll version\libxess.dll"
+        Copy-ExtractedFile -Filter "libxess_dx11.dll" -DestinationPath "Dll version\libxess_dx11.dll"
+        Copy-ExtractedFile -Filter "libxess_fg.dll" -DestinationPath "Dll version\libxess_fg.dll"
+        Copy-ExtractedFile -Filter "libxell.dll" -DestinationPath "Dll version\libxell.dll"
+
+        # Copy FidelityFX
+        Copy-ExtractedFile -Filter "amd_fidelityfx_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_dx12.dll"
+        Copy-ExtractedFile -Filter "amd_fidelityfx_framegeneration_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_framegeneration_dx12.dll"
+        Copy-ExtractedFile -Filter "amd_fidelityfx_loader_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_loader_dx12.dll"
+        Copy-ExtractedFile -Filter "amd_fidelityfx_upscaler_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_upscaler_dx12.dll"
+        Copy-ExtractedFile -Filter "amd_fidelityfx_vk.dll" -DestinationPath "Dll version\amd_fidelityfx_vk.dll"
+
+        # Copy D3D12Core
+        Copy-ExtractedFile -Filter "D3D12Core.dll" -DestinationPath "Dll version\D3D12Core.dll"
+
+        # Copy Signature Override files
+        Copy-ExtractedFile -Filter "DisableSignatureOverride.reg" -DestinationPath "DLLSG mod\DisableNvidiaSignatureChecks.reg"
+        Copy-ExtractedFile -Filter "EnableSignatureOverride.reg" -DestinationPath "DLLSG mod\RestoreNvidiaSignatureChecks.reg"
+
+        # Copy Licenses
+        Copy-ExtractedFile -Filter "XeSS_LICENSE.txt" -DestinationPath "Dll version\XeSS_LICENSE.txt"
+        Copy-ExtractedFile -Filter "FidelityFX_LICENSE.md" -DestinationPath "Dll version\FidelityFX_LICENSE.md"
+        Copy-ExtractedFile -Filter "FidelityFX_v2_LICENSE.md" -DestinationPath "Dll version\FidelityFX_v2_LICENSE.md"
+        Copy-ExtractedFile -Filter "DirectX_LICENSE.txt" -DestinationPath "Dll version\DirectX_LICENSE.txt"
+        Copy-ExtractedFile -Filter "RenoDX_ATTRIBUTION.txt" -DestinationPath "Dll version\RenoDX_ATTRIBUTION.txt"
+
         # Verify copied files
         Write-Host ""
         Write-Host "=== Verification ==="
         $filesToCheck = @(
-            "Dll version\dlss-enabler-upscaler.dll",
+            "Dll version\dlss-unlocked-upscaler.dll",
             "Dll version\OptiScaler.ini",
             "Dll version\libxess.dll",
-            "Dll version\amd_fidelityfx_dx12.dll",
             "Dll version\amd_fidelityfx_vk.dll",
-            "Dll version\XeSS_LICENSE.txt",
-            "Dll version\FidelityFX_LICENSE.md",
-            "Dll version\DirectX_LICENSE.txt",
             "DLLSG mod\DisableNvidiaSignatureChecks.reg",
             "DLLSG mod\RestoreNvidiaSignatureChecks.reg"
         )
@@ -495,23 +462,22 @@ jobs:
         $buildType = "${{ matrix.build_type }}"
         $filename = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}"
         
-        Write-Host "OptiScaler version: $optiVersion ($buildType)"
-        Write-Host "OptiScaler filename: $filename"
+        Write-Host "OptiScaler_DLSSNR version: $optiVersion ($buildType)"
+        Write-Host "OptiScaler_DLSSNR filename: $filename"
         
         # Extract version from filename for output naming
-        # Example: OptiScaler_v0.7.7-pre12_20250630.7z -> dlss-enabler-setup_v0.7.7-pre12_20250630.exe
-        $outputName = "dlss-enabler-setup_unknown"
-        if ($filename -match "OptiScaler_(.+)\.(?:7z|zip)$") {
+        $outputName = "dlss-unlocked-setup_unknown"
+        if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
             $versionPart = $matches[1]
-            $outputName = "dlss-enabler-setup_$versionPart"
+            $outputName = "dlss-unlocked-setup_$versionPart"
         }
         
-        $issFile = "DLSS enabler.iss"
+        $issFile = "DLSS unlocked.iss"
         $content = Get-Content $issFile -Raw
         
         # Update version to use timestamp
         $timestamp = Get-Date -Format "yyyyMMdd.HHmmss"
-        $dlssVersion = "3.01.$timestamp"
+        $dlssVersion = "1.0.$timestamp"
         $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$dlssVersion`""
         
         # Update output filename
@@ -523,16 +489,15 @@ jobs:
         # Save updated file
         Set-Content -Path $issFile -Value $content -Encoding UTF8
         
-        Write-Host "Updated Inno Setup script"
+        Write-Host "Updated Inno Setup script ($issFile)"
         Write-Host "Output filename: $outputName.exe"
-        Write-Host "DLSS Enabler version: $dlssVersion"
+        Write-Host "DLSS Unlocked version: $dlssVersion"
 
     - name: Setup Inno Setup
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
       with:
-        # Use default settings - no code signing for now
-        path: "DLSS enabler.iss"
+        path: "DLSS unlocked.iss"
 
     - name: Get current date
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -543,7 +508,7 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: actions/upload-artifact@v4
       with:
-        name: dlss-enabler-${{ matrix.build_type }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
+        name: dlss-unlocked-${{ matrix.build_type }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
         path: Output/*.exe
         retention-days: 30
 
@@ -552,42 +517,41 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ matrix.build_type == 'nightly' && 'nightly' || needs.check-versions.outputs.latest_version }}
-        name: "DLSS Enabler (${{ matrix.build_type }}) - OptiScaler ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
+        name: "DLSS Unlocked (${{ matrix.build_type }}) - OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         body: |
-          🚀 **DLSS Enabler** - ${{ matrix.build_type }} build with OptiScaler ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
+          🚀 **DLSS Unlocked** - ${{ matrix.build_type }} build with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
+          - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **OptiScaler Package**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}`
-          - **XeSS Library**: Latest from OptiScaler package
-          - **AMD FidelityFX**: Latest from OptiScaler package  
-          - **DLSSG to FSR3 Module**: Nukem9's mod (version 0.130)
-          - **Registry Overrides**: Latest from OptiScaler package
+          - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
+          - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
+          - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
+          - **DLSSG to FSR3 Module**: Nukem9's mod (version 0.100)
+          - **Registry Overrides**: Latest signature override scripts
           
           ## 🔧 Installation
           1. Download the installer below
           2. Run the setup and select your game directory
           3. Choose installation type based on your needs:
              - **Preferred installation (DLL package)**: Recommended for most users
-             - **Experimental support**: For AMD and Intel GPUs
+             - **Troubleshooting / Custom**: For specific game mod setups
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
-          - **OptiScaler**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
+          - **OptiScaler_DLSSNR**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
           - **Package**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
-          - **Auto-built**: This release was automatically generated when a new OptiScaler version was detected
+          - **Auto-built**: This release was automatically generated when a new OptiScaler_DLSSNR version was detected
           
-          ## 🎮 Compatibility
-          Works with any DirectX 12 game that supports DLSS2 and DLSS3 natively.
+          ## 🎮 Supported GPUs
+          - NVIDIA GeForce RTX 20xx / 30xx / 40xx
           
-          ## ⚠️ Important Notes
-          - For NVIDIA GPU users: Use the standard installation
-          - For AMD/Intel GPU users: Select "Experimental support" during installation
-          - Some antivirus software may flag the installer as false positive due to DLL injection techniques
-          - **${{ matrix.build_type == 'nightly' && 'This is a nightly build - may contain experimental features' || 'This is a stable release' }}**
+          ## 📜 Credits
+          - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
+          - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           
           ---
-          Built with OptiScaler `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
+          Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
         files: Output/*.exe
         draft: false
         prerelease: ${{ matrix.build_type == 'nightly' }}
