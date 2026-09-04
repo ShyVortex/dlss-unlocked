@@ -4,6 +4,10 @@
 
 Simulate DLSS Upscaler and DLSS-G Frame Generation features on NVIDIA GeForce RTX 20xx/30xx/40xx GPUs in DirectX 12 games that support DLSS2 and DLSS3 natively.
 
+<p align="center">
+  <img width="640" src="thumbnail.jpeg" alt="DLSS Unlocked Thumbnail">
+</p>
+
 ## 🚀 Automated Builds with Latest OptiScaler_DLSSNR
 
 This repository features **automated builds** that keep DLSS-Unlocked up-to-date with the latest [OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR) releases!
