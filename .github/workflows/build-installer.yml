@@ -32,6 +32,7 @@ permissions:
 
 env:
   OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
   check-versions:
@@ -97,10 +98,14 @@ jobs:
         function Check-ExistingBuild {
             param($filename)
             try {
-                $existingReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases" -Headers @{
+                $headers = @{
                     'Accept' = 'application/vnd.github.v3+json'
                     'User-Agent' = 'DLSS-Unlocked-Bot'
                 }
+                if ($env:GITHUB_TOKEN) {
+                    $headers['Authorization'] = "token $env:GITHUB_TOKEN"
+                }
+                $existingReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases" -Headers $headers
                 
                 # Extract version from filename (e.g., OptiScaler-DLSSNR-v0.2.0.zip -> v0.2.0)
                 $versionFromFilename = ""
@@ -516,9 +521,17 @@ jobs:
         # Copy OptiScaler_DLSSNR monolithic engine as version.dll
         $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
         if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-unlocked-upscaler.dll" -File | Select-Object -First 1
+        }
+        if (-not $optiScalerDll) {
             $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "version.dll" -File | Select-Object -First 1
         }
-        Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\version.dll" -Force
+        if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-enabler.asi" -File | Select-Object -First 1
+        }
+        if ($optiScalerDll) {
+            Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\version.dll" -Force
+        }
         
         # Copy OptiScaler_DLSSNR config and forwarder
         if (Test-Path "Dll version\OptiScaler.ini") {

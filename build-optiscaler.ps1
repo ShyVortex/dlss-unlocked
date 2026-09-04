@@ -146,7 +146,15 @@ if ($CreateStandaloneZip) {
     if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
     New-Item -ItemType Directory -Path $manualZipDir | Out-Null
 
-    $sourceDll = if (Test-Path "$DllVersionDir\OptiScaler.dll") { "$DllVersionDir\OptiScaler.dll" } else { "$DllVersionDir\version.dll" }
+    $sourceDll = if (Test-Path "$DllVersionDir\OptiScaler.dll") {
+        "$DllVersionDir\OptiScaler.dll"
+    } elseif (Test-Path "$DllVersionDir\dlss-unlocked-upscaler.dll") {
+        "$DllVersionDir\dlss-unlocked-upscaler.dll"
+    } elseif (Test-Path "$DllVersionDir\version.dll") {
+        "$DllVersionDir\version.dll"
+    } else {
+        "$DllVersionDir\dlss-enabler.asi"
+    }
     Copy-Item -Path $sourceDll -Destination "$manualZipDir\version.dll" -Force
     if (Test-Path "$DllVersionDir\OptiScaler.ini") {
         Copy-Item -Path "$DllVersionDir\OptiScaler.ini" -Destination $manualZipDir -Force
