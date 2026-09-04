@@ -2,7 +2,7 @@
 
 [![Build Installer](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml/badge.svg)](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml)
 
-Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 3X, 4X)**, and **Neural Rendering (DLSS-NR)** upscaling across NVIDIA GeForce RTX 20xx / 30xx / 40xx GPUs in DirectX 12 games. Fully compatible with **Windows** and **Linux (Proton)** out of the box.
+Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 3X, 4X)**, and **Neural Rendering (DLSS-NR)** features across NVIDIA GeForce RTX 20xx / 30xx / 40xx GPUs in DirectX 12 games. Fully compatible with **Windows** and **Linux (Proton)** out of the box.
 
 <p align="center">
   <img width="960" src="thumbnail.jpeg" alt="DLSS Unlocked Thumbnail">
@@ -11,6 +11,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 ---
 
 ## ⚠️ Requirements
+- DLSS and DLSS-G dll files from NVIDIA Streamline v310.8 onwards: `nvngx_dlss.dll`, `nvngx_dlssg.dll`
 - DLSS-NR library file (Streamline v310.8 onwards), patched to work with RTX 20xx and 30xx series GPUs: `nvngx_dlssnr.dll`
 - Game that natively supports DLSS Upscaling and DLSS Frame Generation
 
