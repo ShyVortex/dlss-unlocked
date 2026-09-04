@@ -17,7 +17,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName=c:\games\my-game\bin\x64
 DisableProgramGroupPage=yes
 DirExistsWarning=no
-LicenseFile=DLSS for AMD and Intel - License.rtf
+LicenseFile=DLSS for NVIDIA - License.rtf
 ; Remove the following line to run in administrative install mode (install for all users.)
 PrivilegesRequired=lowest
 OutputBaseFilename=dlss-unlocked-setup-1.0.0.0
