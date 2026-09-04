@@ -518,7 +518,10 @@ jobs:
         if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
         New-Item -ItemType Directory -Path $manualZipDir -Force
         
-        # Copy OptiScaler_DLSSNR monolithic engine as version.dll
+        $optiScalerSubDir = Join-Path $manualZipDir "OptiScaler"
+        New-Item -ItemType Directory -Path $optiScalerSubDir -Force
+        
+        # 1. Root files: version.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
         $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
         if (-not $optiScalerDll) {
             $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-unlocked-upscaler.dll" -File | Select-Object -First 1
@@ -558,26 +561,26 @@ jobs:
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
         }
         
-        # Copy DLSS Enabler headless engine (required for FGNvngxReplacement=Arturs / FGInput=nvngxfg)
+        # 2. OptiScaler subfolder files: DLSS Enabler headless, DLSSG mod, upscalers & companion DLLs
         if (Test-Path "Dll version\dlss-enabler.asi") {
-            Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$manualZipDir\dlss-enabler-headless.dll" -Force
+            Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$optiScalerSubDir\dlss-enabler-headless.dll" -Force
         }
         if (Test-Path "Dll version\nvngx.ini") {
-            Copy-Item -Path "Dll version\nvngx.ini" -Destination $manualZipDir -Force
+            Copy-Item -Path "Dll version\nvngx.ini" -Destination $optiScalerSubDir -Force
         }
         
         # Copy DLSSG mod components
         if (Test-Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll") {
-            Copy-Item -Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll" -Destination $manualZipDir -Force
+            Copy-Item -Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll" -Destination $optiScalerSubDir -Force
         }
         if (Test-Path "DLLSG mod\nvngx.dll") {
-            Copy-Item -Path "DLLSG mod\nvngx.dll" -Destination "$manualZipDir\_nvngx.dll" -Force
+            Copy-Item -Path "DLLSG mod\nvngx.dll" -Destination "$optiScalerSubDir\_nvngx.dll" -Force
         }
         if (Test-Path "DLLSG mod\DisableNvidiaSignatureChecks.reg") {
-            Copy-Item -Path "DLLSG mod\DisableNvidiaSignatureChecks.reg" -Destination $manualZipDir -Force
+            Copy-Item -Path "DLLSG mod\DisableNvidiaSignatureChecks.reg" -Destination $optiScalerSubDir -Force
         }
         if (Test-Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg") {
-            Copy-Item -Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg" -Destination $manualZipDir -Force
+            Copy-Item -Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg" -Destination $optiScalerSubDir -Force
         }
         
         # Copy upscaler and FidelityFX / XeSS companion DLLs
@@ -595,16 +598,8 @@ jobs:
         )
         foreach ($cDll in $companionDlls) {
             if (Test-Path "Dll version\$cDll") {
-                Copy-Item -Path "Dll version\$cDll" -Destination $manualZipDir -Force
+                Copy-Item -Path "Dll version\$cDll" -Destination $optiScalerSubDir -Force
             }
-        }
-        
-        # Copy documentation & license files
-        if (Test-Path "Readme (DLSS unlocked).txt") {
-            Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $manualZipDir -Force
-        }
-        if (Test-Path "License (DLSS unlocked).txt") {
-            Copy-Item -Path "License (DLSS unlocked).txt" -Destination $manualZipDir -Force
         }
         
         # Ensure Output directory exists
