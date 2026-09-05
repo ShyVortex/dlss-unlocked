@@ -178,14 +178,9 @@ if ($CreateStandaloneZip) {
         } else {
             $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
         }
-        if ($optiIniContent -match '(?m)^OverlayMenu\s*=') {
-            $optiIniContent = $optiIniContent -replace '(?m)^OverlayMenu\s*=.*', 'OverlayMenu=false'
-        } else {
-            $optiIniContent = $optiIniContent -replace '\[Menu\]', "[Menu]`r`nOverlayMenu=false"
-        }
         Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
         Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=fsrfg, FGNvngxReplacement=Arturs, OverlayMenu=false)" -ForegroundColor Gray
+        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=fsrfg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
