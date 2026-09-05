@@ -33,12 +33,13 @@ if ($BuildDLSSEnabler) {
     $sdkVer = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and $_.Name -match "^10\." } | Sort-Object Name -Descending | Select-Object -First 1).Name
     if (-not $sdkVer) { $sdkVer = "10.0" }
     
-    # Patch DLSSEnabler.vcxproj for Vulkan SDK path & /utf-8 compiler option
+    # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option & SPDLOG_WCHAR_FILENAMES
     $projFile = Join-Path $deBuildDir "DLSSEnabler.vcxproj"
     if (Test-Path $projFile) {
         $projContent = Get-Content $projFile -Raw
         $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
-        $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>"
+        $projContent = $projContent -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>SPDLOG_WCHAR_FILENAMES;'
+        $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 /D SPDLOG_WCHAR_FILENAMES %(AdditionalOptions)</AdditionalOptions>"
         Set-Content -Path $projFile -Value $projContent -Encoding UTF8
     }
 
