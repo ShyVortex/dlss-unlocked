@@ -5,13 +5,65 @@ param(
     [string]$OptiScalerPath = "",
     [string]$OptiScalerVersion = "v0.2.0-dlssnr",
     [switch]$DownloadLatest = $false,
-    [switch]$CreateStandaloneZip = $false
+    [switch]$CreateStandaloneZip = $false,
+    [switch]$BuildDLSSEnabler = $false
 )
 
 $ErrorActionPreference = "Stop"
 
 Write-Host "DLSS-Unlocked OptiScaler_DLSSNR Build Script" -ForegroundColor Green
 Write-Host "===========================================" -ForegroundColor Green
+
+if ($BuildDLSSEnabler) {
+    Write-Host "Building DLSS Enabler from source (artur-graniszewski/dlss-enabler-main)..." -ForegroundColor Yellow
+    $deBuildDir = "temp_dlss_enabler"
+    if (Test-Path $deBuildDir) { Remove-Item -Path $deBuildDir -Recurse -Force }
+    
+    Write-Host "Cloning dlss-enabler-main..." -ForegroundColor Gray
+    git clone --recurse-submodules https://github.com/artur-graniszewski/dlss-enabler-main.git $deBuildDir
+    
+    $spdlogPath = Join-Path $deBuildDir "External\spdlog"
+    if (-not (Test-Path (Join-Path $spdlogPath "include"))) {
+        Write-Host "Fetching spdlog dependency..." -ForegroundColor Gray
+        if (Test-Path $spdlogPath) { Remove-Item -Path $spdlogPath -Recurse -Force }
+        git clone --depth 1 https://github.com/gabime/spdlog.git $spdlogPath
+    }
+    
+    Push-Location $deBuildDir
+    try {
+        msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:PostBuildEventUseInBuild=false /m
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "MSBuild failed with exit code $LASTEXITCODE"
+        }
+    } catch {
+        Write-Warning "Failed to build DLSS Enabler locally: $($_.Exception.Message)"
+    } finally {
+        Pop-Location
+    }
+    
+    $builtDll = Get-ChildItem -Path $deBuildDir -Filter "DLSSEnabler.dll" -Recurse -File | Where-Object { $_.FullName -match "x64[\\/]Release" } | Select-Object -First 1
+    if (-not $builtDll) {
+        $builtDll = Get-ChildItem -Path $deBuildDir -Filter "DLSSEnabler.dll" -Recurse -File | Select-Object -First 1
+    }
+    
+    if ($builtDll) {
+        if (-not (Test-Path "Dll version")) { New-Item -ItemType Directory -Path "Dll version" | Out-Null }
+        $targetAsi = "Dll version\dlss-enabler.asi"
+        if (Test-Path $targetAsi) {
+            $oldHash = (Get-FileHash -Path $targetAsi -Algorithm SHA256).Hash
+            $newHash = (Get-FileHash -Path $builtDll.FullName -Algorithm SHA256).Hash
+            if ($oldHash -ne $newHash) {
+                Write-Host "DLSS Enabler updated! ($newHash)" -ForegroundColor Green
+                Copy-Item -Path $builtDll.FullName -Destination $targetAsi -Force
+            } else {
+                Write-Host "DLSS Enabler is already up to date." -ForegroundColor Gray
+            }
+        } else {
+            Copy-Item -Path $builtDll.FullName -Destination $targetAsi -Force
+            Write-Host "Copied compiled DLSS Enabler to $targetAsi" -ForegroundColor Green
+        }
+    }
+}
 
 $Repo = "Dagherbou/OptiScaler_DLSSNR"
 $TempDir = "temp_optiscaler"
