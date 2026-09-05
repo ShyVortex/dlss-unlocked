@@ -73,8 +73,9 @@ To build the standalone package or installer locally:
 
 ## Known Issues
 Some recent DX12 games may crash under Linux when opening the OptiScaler overlay.
-This can be fixed by setting the following variable to true in OptiScaler.ini:
-`OverlayMenu=false`
+This can be fixed by setting the following variable to false in OptiScaler.ini:
+`OverlayMenu=false`.  
+This will still allow to open the overlay but it will exhibit issues like UI overlap, washed colors and increased brightness.
 
 ## 📜 Credits
 
