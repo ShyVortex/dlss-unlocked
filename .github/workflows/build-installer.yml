@@ -708,24 +708,27 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ matrix.build_type }} build with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: All-in-one installer that configures and deploys `version.dll`, OptiScaler_DLSSNR, DLSSG-to-FSR3, and NVIDIA runtime components.
-          - **Standalone Archive (`.zip`)**: Contains standalone `version.dll` and documentation for manual installation.
+          - **Automated Setup (`.exe`)**: All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, and NVIDIA runtime components.
+          - **Standalone Archive (`.zip`)**: Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
           - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
+          - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
-          - **DLSSG to FSR3 Module**: Nukem9's mod (version 0.100)
+          - **DLSSG to FSR3 Module**: Nukem9's mod
           - **Registry Overrides**: Latest signature override scripts
           
           ## 🔧 Installation
-          ### Option A: Setup Installer (Recommended)
+          ### Option A: Setup Installer (Recommended for Windows)
           1. Download `dlss-unlocked-setup-*.exe`
           2. Run the setup and select your game directory
           3. Complete the installation wizard
           
-          ### Option B: Manual Installation
+          ### Option B: Manual Installation (Recommended for Linux / Proton)
           1. Download `dlss-unlocked-standalone-*.zip`
-          2. Extract `version.dll` into your game directory (alongside the game `.exe`)
+          2. Extract contents directly into your game directory alongside the game `.exe`:
+             - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
+             - **`OptiScaler/` folder:** companion modules
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
