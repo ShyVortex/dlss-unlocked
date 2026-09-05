@@ -577,7 +577,7 @@ jobs:
       with:
         path: "DLSS unlocked.iss"
 
-    - name: Create standalone manual package (version.dll zip)
+    - name: Create standalone manual package (dxgi.dll zip)
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
@@ -594,7 +594,7 @@ jobs:
         $optiScalerSubDir = Join-Path $manualZipDir "OptiScaler"
         New-Item -ItemType Directory -Path $optiScalerSubDir -Force
         
-        # 1. Root files: version.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
+        # 1. Root files: dxgi.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
         $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
         if (-not $optiScalerDll) {
             $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-unlocked-upscaler.dll" -File | Select-Object -First 1
@@ -606,7 +606,7 @@ jobs:
             $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-enabler.asi" -File | Select-Object -First 1
         }
         if ($optiScalerDll) {
-            Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\version.dll" -Force
+            Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\dxgi.dll" -Force
         }
         
         # Copy OptiScaler_DLSSNR config and forwarder
@@ -618,18 +618,23 @@ jobs:
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGInput=nvngxfg"
             }
             if ($optiIniContent -match '(?m)^FGOutput\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=auto'
+                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=fsrfg'
             } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=auto"
+                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=fsrfg"
             }
             if ($optiIniContent -match '(?m)^FGNvngxReplacement\s*=') {
                 $optiIniContent = $optiIniContent -replace '(?m)^FGNvngxReplacement\s*=.*', 'FGNvngxReplacement=Arturs'
             } else {
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
             }
+            if ($optiIniContent -match '(?m)^OverlayMenu\s*=') {
+                $optiIniContent = $optiIniContent -replace '(?m)^OverlayMenu\s*=.*', 'OverlayMenu=false'
+            } else {
+                $optiIniContent = $optiIniContent -replace '\[Menu\]', "[Menu]`r`nOverlayMenu=false"
+            }
             Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=auto, FGNvngxReplacement=Arturs)"
+            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=fsrfg, FGNvngxReplacement=Arturs, OverlayMenu=false)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force

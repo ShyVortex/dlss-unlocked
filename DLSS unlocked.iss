@@ -50,14 +50,14 @@ LanguageDetectionMethod=none
 CloseApplications=no
 
 [Types]
-Name: "full"; Description: "Preferred installation (version.dll + OptiScaler + Frame Gen)"
+Name: "full"; Description: "Preferred installation (dxgi.dll + OptiScaler + Frame Gen)"
 Name: "custom"; Description: "Custom installation"; Flags: iscustom
 
 [Components]
 Name: mainfiles; Description: Main entry point proxy; Types: full custom
-Name: mainfiles/dllversion; Description: Install as version.dll (optimal compatibility); Types: full custom; Flags: exclusive
+Name: mainfiles/dlldxgi; Description: Install as dxgi.dll (preferred for DirectX 11/12 & RE Engine); Types: full custom; Flags: exclusive
+Name: mainfiles/dllversion; Description: Install as version.dll (alternative hook / ReShade compatible); Types: custom; Flags: exclusive
 Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); Types: custom; Flags: exclusive
-Name: mainfiles/dlldxgi; Description: Install as dxgi.dll (alternative hook); Types: custom; Flags: exclusive
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
 Name: core; Description: Install OptiScaler_DLSSNR core, upscaler and neural rendering components; Flags: fixed; Types: full custom

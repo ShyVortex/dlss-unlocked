@@ -37,7 +37,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 ### Option B: Standalone Package (`.zip`) — Recommended for Linux / Manual Installs
 1. Download `dlss-unlocked-standalone-*.zip`.
 2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
-   - **Root folder:** `version.dll`, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
+   - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
 
 ---
@@ -71,11 +71,20 @@ To build the standalone package or installer locally:
 
 ---
 
-## Known Issues
-Some recent DX12 games may crash under Linux when opening the OptiScaler overlay.
-This can be fixed by setting the following variable to false in OptiScaler.ini:
-`OverlayMenu=false`.  
-This will still allow to open the overlay but it will exhibit issues like UI overlap, washed colors and increased brightness.
+## Known Issues & Troubleshooting
+
+### 1. Overlay Crash on Linux / Proton (DirectX 12)
+Some DX12 games may crash (`VK_ERROR_DEVICE_LOST`) under Wine / Proton when opening the OptiScaler in-game overlay menu:
+- **Fix:** Set `OverlayMenu=false` under `[Menu]` in `OptiScaler.ini` (pre-configured by default).
+- **Note:** This allows the overlay to render via the game's internal render pipeline without crashing the Vulkan presentation queue, though the menu colors may be affected by the game's auto-exposure or tone-mapping. You can adjust colors or switch to a dark theme under **Menu Theme and Color** in the overlay.
+
+### 2. Resident Evil Requiem & Capcom RE Engine Games
+Capcom's RE Engine enforces strict memory and swapchain integrity checks:
+- **Crash on Boot (`re9.exe!0x140000000...`):**
+  - Use `dxgi.dll` as the proxy name and install **[REFramework](https://github.com/praydog/REFramework)** (`dinput8.dll`) into the game root directory alongside `dxgi.dll`. REFramework safely hooks into the engine early and bypasses Capcom's VTable integrity checks.
+- **Frame Generation on RTX 20xx / 30xx GPUs:**
+  - Set `FGInput=dlssg` under `[FrameGen]` in `OptiScaler.ini` for rock-solid 2X Frame Generation.
+  - Multi-Frame Generation (MFG: 3X / 4X) can trigger race conditions with RE Engine's asynchronous worker threads; standard 2X (`FGInput=dlssg`) is recommended for RE Engine titles.
 
 ## 📜 Credits
 
