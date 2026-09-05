@@ -398,14 +398,16 @@ jobs:
         if (-not $sdkVer) { $sdkVer = "10.0" }
         Write-Host "Using Windows SDK: $sdkVer"
         
-        # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option & SPDLOG_WCHAR_FILENAMES
+        # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option, SPDLOG_WCHAR_FILENAMES & missing OptiScaler.lib
         $projFile = Join-Path $buildDir "DLSSEnabler.vcxproj"
         $projContent = Get-Content $projFile -Raw
         $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
         $projContent = $projContent -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>SPDLOG_WCHAR_FILENAMES;'
         $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 /D SPDLOG_WCHAR_FILENAMES %(AdditionalOptions)</AdditionalOptions>"
+        $projContent = $projContent -replace 'Libs[\\/]OptiScaler\.lib;?', ''
+        $projContent = $projContent -replace 'OptiScaler\.lib;?', ''
         Set-Content -Path $projFile -Value $projContent -Encoding UTF8
-        Write-Host "Patched DLSSEnabler.vcxproj (Vulkan SDK paths, /utf-8, SPDLOG_WCHAR_FILENAMES)"
+        Write-Host "Patched DLSSEnabler.vcxproj (Vulkan SDK paths, /utf-8, SPDLOG_WCHAR_FILENAMES, stripped OptiScaler.lib)"
 
         # Patch duplicate function bodies in StreamlineProxy.cpp
         $slFile = Join-Path $buildDir "Utils\StreamlineProxy.cpp"
