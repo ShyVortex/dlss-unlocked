@@ -33,6 +33,16 @@ if ($BuildDLSSEnabler) {
     $sdkVer = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and $_.Name -match "^10\." } | Sort-Object Name -Descending | Select-Object -First 1).Name
     if (-not $sdkVer) { $sdkVer = "10.0" }
     
+    # Patch HLSL vector comparison for modern DXC (DirectX Shader Compiler)
+    Get-ChildItem -Path $deBuildDir -Filter "*.hlsl" -Recurse | ForEach-Object {
+        $hlslContent = Get-Content $_.FullName -Raw
+        $patchedHlsl = $hlslContent -replace 'all\(\s*([a-zA-Z0-9_]+)\s*>=\s*0\.0\s*&&\s*\1\s*<=\s*1\.0\s*\)', 'all($1 >= 0.0) && all($1 <= 1.0)'
+        if ($hlslContent -ne $patchedHlsl) {
+            Set-Content -Path $_.FullName -Value $patchedHlsl -Encoding UTF8
+            Write-Host "Patched HLSL shader for DXC: $($_.Name)" -ForegroundColor Gray
+        }
+    }
+    
     Push-Location $deBuildDir
     try {
         msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=$sdkVer /p:PostBuildEventUseInBuild=false /m

@@ -398,6 +398,16 @@ jobs:
         if (-not $sdkVer) { $sdkVer = "10.0" }
         Write-Host "Using Windows SDK: $sdkVer"
         
+        # Patch HLSL vector comparison for modern DXC (DirectX Shader Compiler)
+        Get-ChildItem -Path $buildDir -Filter "*.hlsl" -Recurse | ForEach-Object {
+            $hlslContent = Get-Content $_.FullName -Raw
+            $patchedHlsl = $hlslContent -replace 'all\(\s*([a-zA-Z0-9_]+)\s*>=\s*0\.0\s*&&\s*\1\s*<=\s*1\.0\s*\)', 'all($1 >= 0.0) && all($1 <= 1.0)'
+            if ($hlslContent -ne $patchedHlsl) {
+                Set-Content -Path $_.FullName -Value $patchedHlsl -Encoding UTF8
+                Write-Host "Patched HLSL shader for DXC: $($_.Name)"
+            }
+        }
+        
         # Build Release x64
         Push-Location $buildDir
         try {
