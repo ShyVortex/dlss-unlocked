@@ -398,7 +398,7 @@ jobs:
         if (-not $sdkVer) { $sdkVer = "10.0" }
         Write-Host "Using Windows SDK: $sdkVer"
         
-        # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option, SPDLOG_WCHAR_FILENAMES & missing OptiScaler.lib
+        # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option, SPDLOG_WCHAR_FILENAMES, MultiThreadedDLL runtime, stripped OptiScaler.lib & unused /INCLUDE linker options
         $projFile = Join-Path $buildDir "DLSSEnabler.vcxproj"
         $projContent = Get-Content $projFile -Raw
         $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
@@ -406,8 +406,41 @@ jobs:
         $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 /D SPDLOG_WCHAR_FILENAMES %(AdditionalOptions)</AdditionalOptions>"
         $projContent = $projContent -replace 'Libs[\\/]OptiScaler\.lib;?', ''
         $projContent = $projContent -replace 'OptiScaler\.lib;?', ''
+        $projContent = $projContent -replace '<RuntimeLibrary>MultiThreaded</RuntimeLibrary>', '<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>'
+        $projContent = $projContent -replace '/INCLUDE:[a-zA-Z0-9_]+', ''
         Set-Content -Path $projFile -Value $projContent -Encoding UTF8
-        Write-Host "Patched DLSSEnabler.vcxproj (Vulkan SDK paths, /utf-8, SPDLOG_WCHAR_FILENAMES, stripped OptiScaler.lib)"
+        Write-Host "Patched DLSSEnabler.vcxproj"
+
+        # Patch missing dllModule symbol definition in DllMain.cpp
+        $dllMainFile = Join-Path $buildDir "DllMain.cpp"
+        if (Test-Path $dllMainFile) {
+            $dmContent = Get-Content $dllMainFile -Raw
+            if ($dmContent -notmatch "HMODULE dllModule\s*=") {
+                $dmContent = "HMODULE dllModule = nullptr;`r`n" + $dmContent
+                Set-Content -Path $dllMainFile -Value $dmContent -Encoding UTF8
+                Write-Host "Patched dllModule definition in DllMain.cpp"
+            }
+        }
+
+        # Patch OptiScaler stubs in OptiscalerHook.cpp
+        $optiFile = Join-Path $buildDir "Utils\OptiscalerHook.cpp"
+        if (Test-Path $optiFile) {
+            $optiContent = Get-Content $optiFile -Raw
+            if ($optiContent -notmatch "OptiScaler_Init") {
+                $optiContent += "`r`nbool OptiScaler_Init(HMODULE self, const OptiScalerConfig* cfg) { return false; }`r`nvoid OptiScaler_Shutdown() {}`r`nbool BeginVersionBypassHooks() { return false; }`r`n"
+                Set-Content -Path $optiFile -Value $optiContent -Encoding UTF8
+                Write-Host "Patched OptiScaler stubs in OptiscalerHook.cpp"
+            }
+        }
+
+        # Disable external FFX profiler in ffx_gpu_profiler.h
+        $profFile = Join-Path $buildDir "Utils\ffx_gpu_profiler.h"
+        if (Test-Path $profFile) {
+            $profContent = Get-Content $profFile -Raw
+            $profContent = $profContent -replace '#define FFX_GPU_PROFILER_AVAILABLE 1', '//#define FFX_GPU_PROFILER_AVAILABLE 1'
+            Set-Content -Path $profFile -Value $profContent -Encoding UTF8
+            Write-Host "Disabled FFX profiler in ffx_gpu_profiler.h"
+        }
 
         # Patch duplicate function bodies in StreamlineProxy.cpp
         $slFile = Join-Path $buildDir "Utils\StreamlineProxy.cpp"
