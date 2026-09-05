@@ -393,11 +393,16 @@ jobs:
             $env:LIB = "$env:VULKAN_SDK\Lib;$env:LIB"
         }
         
+        # Detect installed Windows SDK
+        $sdkVer = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and $_.Name -match "^10\." } | Sort-Object Name -Descending | Select-Object -First 1).Name
+        if (-not $sdkVer) { $sdkVer = "10.0" }
+        Write-Host "Using Windows SDK: $sdkVer"
+        
         # Build Release x64
         Push-Location $buildDir
         try {
             Write-Host "Building DLSS Enabler (Release|x64)..."
-            msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:PostBuildEventUseInBuild=false /p:VULKAN_SDK="$env:VULKAN_SDK" /m
+            msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=$sdkVer /p:PostBuildEventUseInBuild=false /p:VULKAN_SDK="$env:VULKAN_SDK" /m
             if ($LASTEXITCODE -ne 0) {
                 throw "MSBuild failed with exit code: $LASTEXITCODE"
             }

@@ -29,9 +29,13 @@ if ($BuildDLSSEnabler) {
         git clone --depth 1 https://github.com/gabime/spdlog.git $spdlogPath
     }
     
+    # Detect installed Windows SDK
+    $sdkVer = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and $_.Name -match "^10\." } | Sort-Object Name -Descending | Select-Object -First 1).Name
+    if (-not $sdkVer) { $sdkVer = "10.0" }
+    
     Push-Location $deBuildDir
     try {
-        msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:PostBuildEventUseInBuild=false /m
+        msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:WindowsTargetPlatformVersion=$sdkVer /p:PostBuildEventUseInBuild=false /m
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "MSBuild failed with exit code $LASTEXITCODE"
         }
