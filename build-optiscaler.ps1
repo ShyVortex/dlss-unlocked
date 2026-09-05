@@ -33,6 +33,26 @@ if ($BuildDLSSEnabler) {
     $sdkVer = (Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\Include" -ErrorAction SilentlyContinue | Where-Object { $_.PSIsContainer -and $_.Name -match "^10\." } | Sort-Object Name -Descending | Select-Object -First 1).Name
     if (-not $sdkVer) { $sdkVer = "10.0" }
     
+    # Patch DLSSEnabler.vcxproj for Vulkan SDK path & /utf-8 compiler option
+    $projFile = Join-Path $deBuildDir "DLSSEnabler.vcxproj"
+    if (Test-Path $projFile) {
+        $projContent = Get-Content $projFile -Raw
+        $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
+        $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>"
+        Set-Content -Path $projFile -Value $projContent -Encoding UTF8
+    }
+
+    # Patch duplicate function bodies in StreamlineProxy.cpp
+    $slFile = Join-Path $deBuildDir "Utils\StreamlineProxy.cpp"
+    if (Test-Path $slFile) {
+        $slContent = Get-Content $slFile -Raw
+        $duplicatePattern = '(?s)(int detoured_slDLSSGGetState\(void \*viewport, DLSSGState& state, const DLSSGOptions\* options\)\s*\{.*?\})\s*void\* GetCurrentViewPort\(\)\s*\{.*?LOG_DEBUG\(L"\[STREAMLINE\] RestoreGameDLSSGOptions: returned " \+ std::to_wstring\(result\)\);\s*\}'
+        if ($slContent -match $duplicatePattern) {
+            $slContent = $slContent -replace $duplicatePattern, '$1'
+            Set-Content -Path $slFile -Value $slContent -Encoding UTF8
+        }
+    }
+
     # Patch HLSL vector comparison for modern DXC (DirectX Shader Compiler)
     Get-ChildItem -Path $deBuildDir -Filter "*.hlsl" -Recurse | ForEach-Object {
         $hlslContent = Get-Content $_.FullName -Raw

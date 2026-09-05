@@ -398,6 +398,26 @@ jobs:
         if (-not $sdkVer) { $sdkVer = "10.0" }
         Write-Host "Using Windows SDK: $sdkVer"
         
+        # Patch DLSSEnabler.vcxproj for Vulkan SDK path & /utf-8 compiler option
+        $projFile = Join-Path $buildDir "DLSSEnabler.vcxproj"
+        $projContent = Get-Content $projFile -Raw
+        $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
+        $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>"
+        Set-Content -Path $projFile -Value $projContent -Encoding UTF8
+        Write-Host "Patched DLSSEnabler.vcxproj (Vulkan SDK paths & /utf-8)"
+
+        # Patch duplicate function bodies in StreamlineProxy.cpp
+        $slFile = Join-Path $buildDir "Utils\StreamlineProxy.cpp"
+        if (Test-Path $slFile) {
+            $slContent = Get-Content $slFile -Raw
+            $duplicatePattern = '(?s)(int detoured_slDLSSGGetState\(void \*viewport, DLSSGState& state, const DLSSGOptions\* options\)\s*\{.*?\})\s*void\* GetCurrentViewPort\(\)\s*\{.*?LOG_DEBUG\(L"\[STREAMLINE\] RestoreGameDLSSGOptions: returned " \+ std::to_wstring\(result\)\);\s*\}'
+            if ($slContent -match $duplicatePattern) {
+                $slContent = $slContent -replace $duplicatePattern, '$1'
+                Set-Content -Path $slFile -Value $slContent -Encoding UTF8
+                Write-Host "Removed duplicate functions in StreamlineProxy.cpp"
+            }
+        }
+
         # Patch HLSL vector comparison for modern DXC (DirectX Shader Compiler)
         Get-ChildItem -Path $buildDir -Filter "*.hlsl" -Recurse | ForEach-Object {
             $hlslContent = Get-Content $_.FullName -Raw
