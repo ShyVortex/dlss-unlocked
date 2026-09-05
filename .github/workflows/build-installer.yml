@@ -398,25 +398,46 @@ jobs:
         if (-not $sdkVer) { $sdkVer = "10.0" }
         Write-Host "Using Windows SDK: $sdkVer"
         
-        # Patch DLSSEnabler.vcxproj for Vulkan SDK path, /utf-8 compiler option, SPDLOG_WCHAR_FILENAMES, MultiThreadedDLL runtime, stripped OptiScaler.lib & unused /INCLUDE linker options
+        # Patch DLSSEnabler.vcxproj
         $projFile = Join-Path $buildDir "DLSSEnabler.vcxproj"
         $projContent = Get-Content $projFile -Raw
-        $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', '$(VULKAN_SDK)\Include;$(IncludePath)'
+        # Fix Vulkan SDK include path in AdditionalIncludeDirectories (Release|x64 config)
+        $projContent = $projContent -replace 'C:\\Games\\VulkanSDK\\1\.3\.268\.0\\Include', "$env:VULKAN_SDK\Include"
+        # Also add Vulkan include to the global IncludePath entries (for other configs that lack AdditionalIncludeDirectories)
+        $projContent = $projContent -replace '(<IncludePath>)', "`$1$env:VULKAN_SDK\Include;"
+        # Add SPDLOG_WCHAR_FILENAMES preprocessor definition
         $projContent = $projContent -replace '<PreprocessorDefinitions>', '<PreprocessorDefinitions>SPDLOG_WCHAR_FILENAMES;'
-        $projContent = $projContent -replace '<LanguageStandard>stdcpp20</LanguageStandard>', "<LanguageStandard>stdcpp20</LanguageStandard>`r`n      <AdditionalOptions>/utf-8 /D SPDLOG_WCHAR_FILENAMES %(AdditionalOptions)</AdditionalOptions>"
+        # Remove OptiScaler.lib from linker dependencies
         $projContent = $projContent -replace 'Libs[\\/]OptiScaler\.lib;?', ''
         $projContent = $projContent -replace 'OptiScaler\.lib;?', ''
+        # Switch to MultiThreadedDLL runtime (match CI environment)
         $projContent = $projContent -replace '<RuntimeLibrary>MultiThreaded</RuntimeLibrary>', '<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>'
+        # Remove /INCLUDE linker flags for symbols we may not have
         $projContent = $projContent -replace '/INCLUDE:[a-zA-Z0-9_]+', ''
         Set-Content -Path $projFile -Value $projContent -Encoding UTF8
         Write-Host "Patched DLSSEnabler.vcxproj"
 
+        # Create Directory.Build.props to inject /utf-8 into ALL compilation units
+        $propsContent = "<?xml version=`"1.0`" encoding=`"utf-8`"?>`r`n"
+        $propsContent += "<Project xmlns=`"http://schemas.microsoft.com/developer/msbuild/2003`">`r`n"
+        $propsContent += "  <ItemDefinitionGroup>`r`n"
+        $propsContent += "    <ClCompile>`r`n"
+        $propsContent += "      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>`r`n"
+        $propsContent += "    </ClCompile>`r`n"
+        $propsContent += "  </ItemDefinitionGroup>`r`n"
+        $propsContent += "</Project>"
+        Set-Content -Path (Join-Path $buildDir "Directory.Build.props") -Value $propsContent -Encoding UTF8
+        Write-Host "Created Directory.Build.props (/utf-8 for all TUs)"
+
+
         # Patch missing dllModule symbol definition in DllMain.cpp
+        # Must go AFTER includes so that HMODULE is already defined by Windows headers
         $dllMainFile = Join-Path $buildDir "DllMain.cpp"
         if (Test-Path $dllMainFile) {
             $dmContent = Get-Content $dllMainFile -Raw
-            if ($dmContent -notmatch "HMODULE dllModule\s*=") {
-                $dmContent = "HMODULE dllModule = nullptr;`r`n" + $dmContent
+            if ($dmContent -notmatch "^HMODULE dllModule\s*=" -and $dmContent -notmatch "`nHMODULE dllModule\s*=") {
+                # Insert after the last #include line (before the first code line)
+                $dmContent = $dmContent -replace '(#include\s+"\.\.\/pch\.h")', "`$1`r`n`r`nHMODULE dllModule = nullptr;"
                 Set-Content -Path $dllMainFile -Value $dmContent -Encoding UTF8
                 Write-Host "Patched dllModule definition in DllMain.cpp"
             }
@@ -426,8 +447,14 @@ jobs:
         $optiFile = Join-Path $buildDir "Utils\OptiscalerHook.cpp"
         if (Test-Path $optiFile) {
             $optiContent = Get-Content $optiFile -Raw
-            if ($optiContent -notmatch "OptiScaler_Init") {
-                $optiContent += "`r`nbool OptiScaler_Init(HMODULE self, const OptiScalerConfig* cfg) { return false; }`r`nvoid OptiScaler_Shutdown() {}`r`nbool BeginVersionBypassHooks() { return false; }`r`n"
+            # Only add stubs if the function bodies don't already exist
+            $stubBlock = "`r`n// CI stub implementations (OptiScaler.lib not available)`r`n"
+            $stubBlock += "#include `"Optiscaler.h`"`r`n"
+            $stubBlock += "bool OptiScaler_Init(HMODULE self, const OptiScalerConfig* cfg) { return false; }`r`n"
+            $stubBlock += "void OptiScaler_Shutdown() {}`r`n"
+            $stubBlock += "bool BeginVersionBypassHooks() { return false; }`r`n"
+            if ($optiContent -notmatch "bool OptiScaler_Init\(HMODULE") {
+                $optiContent += $stubBlock
                 Set-Content -Path $optiFile -Value $optiContent -Encoding UTF8
                 Write-Host "Patched OptiScaler stubs in OptiscalerHook.cpp"
             }
@@ -442,15 +469,50 @@ jobs:
             Write-Host "Disabled FFX profiler in ffx_gpu_profiler.h"
         }
 
-        # Patch duplicate function bodies in StreamlineProxy.cpp
+        # Remove duplicate function bodies in StreamlineProxy.cpp (lines after detoured_slDLSSGGetState)
+        # The file contains two copies of GetCurrentViewPort, StreamlineProxy_ForceApplyMfgMode,
+        # and StreamlineProxy_RestoreGameDLSSGOptions. Remove the second set.
         $slFile = Join-Path $buildDir "Utils\StreamlineProxy.cpp"
         if (Test-Path $slFile) {
-            $slContent = Get-Content $slFile -Raw
-            $duplicatePattern = '(?s)(int detoured_slDLSSGGetState\(void \*viewport, DLSSGState& state, const DLSSGOptions\* options\)\s*\{.*?\})\s*void\* GetCurrentViewPort\(\)\s*\{.*?LOG_DEBUG\(L"\[STREAMLINE\] RestoreGameDLSSGOptions: returned " \+ std::to_wstring\(result\)\);\s*\}'
-            if ($slContent -match $duplicatePattern) {
-                $slContent = $slContent -replace $duplicatePattern, '$1'
-                Set-Content -Path $slFile -Value $slContent -Encoding UTF8
-                Write-Host "Removed duplicate functions in StreamlineProxy.cpp"
+            $slLines = Get-Content $slFile
+            $firstGetCurrentViewPort = -1
+            $secondGetCurrentViewPort = -1
+            for ($i = 0; $i -lt $slLines.Count; $i++) {
+                if ($slLines[$i] -match '^\s*void\*\s+GetCurrentViewPort\(\)') {
+                    if ($firstGetCurrentViewPort -eq -1) {
+                        $firstGetCurrentViewPort = $i
+                    } else {
+                        $secondGetCurrentViewPort = $i
+                        break
+                    }
+                }
+            }
+            if ($secondGetCurrentViewPort -ne -1) {
+                # Find the end of the second RestoreGameDLSSGOptions block
+                $endOfDuplicate = $secondGetCurrentViewPort
+                $braceDepth = 0
+                $functionsFound = 0
+                for ($i = $secondGetCurrentViewPort; $i -lt $slLines.Count; $i++) {
+                    foreach ($ch in $slLines[$i].ToCharArray()) {
+                        if ($ch -eq '{') { $braceDepth++ }
+                        if ($ch -eq '}') { 
+                            $braceDepth--
+                            if ($braceDepth -eq 0) { $functionsFound++ }
+                        }
+                    }
+                    # We need to remove 3 duplicate functions (GetCurrentViewPort, ForceApplyMfgMode, RestoreGameDLSSGOptions)
+                    if ($functionsFound -ge 3) {
+                        $endOfDuplicate = $i
+                        break
+                    }
+                }
+                # Remove the duplicate block
+                $newLines = $slLines[0..($secondGetCurrentViewPort - 1)]
+                if ($endOfDuplicate + 1 -lt $slLines.Count) {
+                    $newLines += $slLines[($endOfDuplicate + 1)..($slLines.Count - 1)]
+                }
+                Set-Content -Path $slFile -Value $newLines -Encoding UTF8
+                Write-Host "Removed duplicate functions in StreamlineProxy.cpp (lines $secondGetCurrentViewPort-$endOfDuplicate)"
             }
         }
 
