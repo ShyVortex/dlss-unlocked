@@ -363,10 +363,11 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Setup Vulkan SDK
-      uses: humbletim/setup-vulkan-sdk@v1.2.0
+      uses: jakoch/install-vulkan-sdk-action@v1
       with:
-        vulkan-query-version: 1.3.268.0
-        vulkan-use-cache: true
+        vulkan_version: 1.3.268.0
+        install_runtime: true
+        cache: false
 
     - name: Clone and Build DLSS Enabler
       id: build_de
@@ -386,11 +387,18 @@ jobs:
             git clone --depth 1 https://github.com/gabime/spdlog.git $spdlogPath
         }
         
+        # Configure Vulkan SDK paths if set
+        if ($env:VULKAN_SDK) {
+            Write-Host "Vulkan SDK found at: $env:VULKAN_SDK"
+            $env:INCLUDE = "$env:VULKAN_SDK\Include;$env:INCLUDE"
+            $env:LIB = "$env:VULKAN_SDK\Lib;$env:LIB"
+        }
+        
         # Build Release x64
         Push-Location $buildDir
         try {
             Write-Host "Building DLSS Enabler (Release|x64)..."
-            msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:PostBuildEventUseInBuild=false /m
+            msbuild DLSSEnabler.sln /p:Configuration=Release /p:Platform=x64 /p:PostBuildEventUseInBuild=false /p:VULKAN_SDK="$env:VULKAN_SDK" /m
             if ($LASTEXITCODE -ne 0) {
                 throw "MSBuild failed with exit code: $LASTEXITCODE"
             }
