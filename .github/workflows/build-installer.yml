@@ -321,6 +321,34 @@ jobs:
         $customTag = "${{ github.event.inputs.tag_name }}"
         $customReleaseType = "${{ github.event.inputs.release_type }}"
         if (-not $customReleaseType) { $customReleaseType = "auto" }
+
+        # For manual runs with custom settings, prevent matrix job collision on the same tag
+        if ($isManualRun) {
+            if ($customTag -and $customTag.Trim() -ne "") {
+                if ($customReleaseType -eq "prerelease") {
+                    $shouldBuildNightly = $true
+                    $shouldBuildLatest = $false
+                } elseif ($customReleaseType -eq "stable") {
+                    $shouldBuildNightly = $false
+                    $shouldBuildLatest = $true
+                } else {
+                    if ($customTag -match "nightly|pre|beta|alpha|dev") {
+                        $shouldBuildNightly = $true
+                        $shouldBuildLatest = $false
+                    } else {
+                        $shouldBuildNightly = $false
+                        $shouldBuildLatest = $true
+                    }
+                }
+            } elseif ($customReleaseType -eq "stable" -and -not $specificVersion) {
+                $shouldBuildNightly = $false
+                $shouldBuildLatest = $true
+            } elseif ($customReleaseType -eq "prerelease" -and -not $specificVersion) {
+                $shouldBuildNightly = $true
+                $shouldBuildLatest = $false
+            }
+        }
+
         echo "should_build_nightly=$($shouldBuildNightly.ToString().ToLower())" >> $env:GITHUB_OUTPUT
         echo "should_build_latest=$($shouldBuildLatest.ToString().ToLower())" >> $env:GITHUB_OUTPUT
         echo "nightly_version=$nightlyVersion" >> $env:GITHUB_OUTPUT
@@ -532,23 +560,76 @@ jobs:
             }
         }
 
+    - name: Prepare release metadata
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      id: release_meta
+      shell: powershell
+      run: |
+        $optiVersion = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
+        $optiFilename = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}"
+        $buildType = "${{ matrix.build_type }}"
+        $customTag = "${{ needs.check-versions.outputs.custom_tag }}"
+        $customReleaseType = "${{ needs.check-versions.outputs.custom_release_type }}"
+        
+        # Determine effective tag
+        $effectiveTag = ""
+        if ($customTag -and $customTag.Trim() -ne "") {
+            $effectiveTag = $customTag.Trim()
+        } elseif ($optiFilename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
+            $effectiveTag = $matches[1]
+        } elseif ($optiVersion -and $optiVersion.Trim() -ne "") {
+            $effectiveTag = $optiVersion.Trim()
+        } else {
+            $effectiveTag = $buildType
+        }
+        
+        # Determine display type label (e.g. Stable, Pre-release, Nightly)
+        $displayType = ""
+        if ($customReleaseType -eq "stable") {
+            $displayType = "Stable"
+        } elseif ($customReleaseType -eq "prerelease") {
+            $displayType = "Pre-release"
+        } else {
+            if ($buildType -eq "nightly") {
+                $displayType = "Nightly"
+            } else {
+                $displayType = "Stable"
+            }
+        }
+        
+        # Determine release title
+        if ($customTag -and $customTag.Trim() -ne "") {
+            $releaseTitle = "DLSS Unlocked ($displayType) - $effectiveTag"
+        } else {
+            $releaseTitle = "DLSS Unlocked ($displayType) - OptiScaler_DLSSNR $optiVersion"
+        }
+        
+        # Determine flags
+        $isPrerelease = ($customReleaseType -eq "prerelease") -or ($customReleaseType -ne "stable" -and $buildType -eq "nightly")
+        $makeLatest = ($customReleaseType -eq "stable") -or ($customReleaseType -ne "prerelease" -and $buildType -eq "latest")
+        
+        echo "effective_tag=$effectiveTag" >> $env:GITHUB_OUTPUT
+        echo "display_type=$displayType" >> $env:GITHUB_OUTPUT
+        echo "release_title=$releaseTitle" >> $env:GITHUB_OUTPUT
+        echo "is_prerelease=$($isPrerelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+        echo "make_latest=$($makeLatest.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+        
+        Write-Host "=== Release Metadata ==="
+        Write-Host "Effective Tag: $effectiveTag"
+        Write-Host "Display Type: $displayType"
+        Write-Host "Release Title: $releaseTitle"
+        Write-Host "Is Prerelease: $isPrerelease"
+        Write-Host "Make Latest: $makeLatest"
+
     - name: Update version in Inno Setup script
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
+        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
         $optiVersion = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         $buildType = "${{ matrix.build_type }}"
-        $filename = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}"
         
-        Write-Host "OptiScaler_DLSSNR version: $optiVersion ($buildType)"
-        Write-Host "OptiScaler_DLSSNR filename: $filename"
-        
-        # Extract version from filename for output naming
-        $outputName = "dlss-unlocked-setup_unknown"
-        if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
-            $versionPart = $matches[1]
-            $outputName = "dlss-unlocked-setup_$versionPart"
-        }
+        $outputName = "dlss-unlocked-setup-$effectiveTag"
         
         $issFile = "DLSS unlocked.iss"
         $content = Get-Content $issFile -Raw
@@ -581,11 +662,7 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
-        $filename = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}"
-        $versionPart = "v1.0"
-        if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
-            $versionPart = $matches[1]
-        }
+        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
         
         $manualZipDir = "$env:TEMP\manual_package"
         if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
@@ -676,7 +753,7 @@ jobs:
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
         
-        $zipOutputName = "dlss-unlocked-standalone_$versionPart.zip"
+        $zipOutputName = "dlss-unlocked-standalone-$effectiveTag.zip"
         $zipOutputPath = "Output\$zipOutputName"
         
         Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
@@ -692,7 +769,7 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: actions/upload-artifact@v4
       with:
-        name: dlss-unlocked-${{ matrix.build_type }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
+        name: dlss-unlocked-${{ matrix.build_type }}-${{ steps.release_meta.outputs.effective_tag }}
         path: |
           Output/*.exe
           Output/*.zip
@@ -702,14 +779,14 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ needs.check-versions.outputs.custom_tag != '' && needs.check-versions.outputs.custom_tag || (matrix.build_type == 'nightly' && 'nightly' || needs.check-versions.outputs.latest_version) }}
-        name: "DLSS Unlocked (${{ matrix.build_type }}) - OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
+        tag_name: ${{ steps.release_meta.outputs.effective_tag }}
+        name: ${{ steps.release_meta.outputs.release_title }}
         body: |
-          🚀 **DLSS Unlocked** - ${{ matrix.build_type }} build with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
+          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, and NVIDIA runtime components.
-          - **Standalone Archive (`.zip`)**: Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, and NVIDIA runtime components.
+          - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
           - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
@@ -720,21 +797,23 @@ jobs:
           
           ## 🔧 Installation
           ### Option A: Setup Installer (Recommended for Windows)
-          1. Download `dlss-unlocked-setup-*.exe`
+          1. Download `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe`
           2. Run the setup and select your game directory
           3. Complete the installation wizard
           
           ### Option B: Manual Installation (Recommended for Linux / Proton)
-          1. Download `dlss-unlocked-standalone-*.zip`
+          1. Download `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip`
           2. Extract contents directly into your game directory alongside the game `.exe`:
              - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
+          - **Release Tag**: ${{ steps.release_meta.outputs.effective_tag }}
+          - **Release Type**: ${{ steps.release_meta.outputs.display_type }}
           - **OptiScaler_DLSSNR**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
           - **Package**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
-          - **Auto-built**: This release was automatically generated when a new OptiScaler_DLSSNR version was detected
+          - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
           
           ## 🎮 Supported GPUs
           - NVIDIA GeForce RTX 20xx / 30xx / 40xx
@@ -744,14 +823,14 @@ jobs:
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           
           ---
-          Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
+          Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
         files: |
           Output/*.exe
           Output/*.zip
         draft: false
-        prerelease: ${{ needs.check-versions.outputs.custom_release_type == 'prerelease' || (needs.check-versions.outputs.custom_release_type != 'stable' && matrix.build_type == 'nightly') }}
+        prerelease: ${{ steps.release_meta.outputs.is_prerelease == 'true' }}
         generate_release_notes: true
         fail_on_unmatched_files: true
-        make_latest: ${{ needs.check-versions.outputs.custom_release_type == 'stable' || (needs.check-versions.outputs.custom_release_type != 'prerelease' && matrix.build_type == 'latest') }}
+        make_latest: ${{ steps.release_meta.outputs.make_latest == 'true' }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

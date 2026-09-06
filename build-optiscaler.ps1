@@ -4,6 +4,7 @@
 param(
     [string]$OptiScalerPath = "",
     [string]$OptiScalerVersion = "v0.2.0-dlssnr",
+    [string]$TagName = "",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -225,7 +226,8 @@ if ($CreateStandaloneZip) {
     }
 
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
-    $zipOutputPath = "Output\dlss-unlocked-standalone.zip"
+    $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }
+    $zipOutputPath = "Output\dlss-unlocked-standalone-$effectiveTag.zip"
     Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
     Write-Host "Standalone zip created at: $zipOutputPath" -ForegroundColor Green
 }
