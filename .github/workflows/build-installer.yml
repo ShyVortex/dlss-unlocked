@@ -144,10 +144,13 @@ jobs:
             }
         }
 
-        # Determine build types to check
+        # Fetch release information
         $specificVersion = "${{ github.event.inputs.optiscaler_version }}"
+        $customTag = "${{ github.event.inputs.tag_name }}"
+        $customReleaseType = "${{ github.event.inputs.release_type }}"
+        if (-not $customReleaseType) { $customReleaseType = "auto" }
         $isManualRun = "${{ github.event_name }}" -eq "workflow_dispatch"
-        $forceValue = $isManualRun -or ("${{ github.event.inputs.force_build }}" -eq "true")
+        $forceBuild = ("${{ github.event.inputs.force_build }}" -eq "true")
         $isScheduledRun = "${{ github.event_name }}" -eq "schedule"
         
         $shouldBuildNightly = $false
@@ -160,193 +163,115 @@ jobs:
         $latestFilename = ""
 
         Write-Host "Event: ${{ github.event_name }}"
-        Write-Host "Manual run: $isManualRun (auto-force rebuild: $forceValue)"
-        Write-Host "Specific version: $specificVersion"
-        Write-Host "Scheduled run: $isScheduledRun"
+        Write-Host "Manual run: $isManualRun"
+        Write-Host "Specific version requested: $specificVersion"
+        Write-Host "Custom tag: $customTag"
+        Write-Host "Release type: $customReleaseType"
+        Write-Host "Force build: $forceBuild"
 
-        # Handle specific version request (manual workflow_dispatch with specific version)
+        # 1. Fetch releases from GitHub API
         if ($specificVersion -and $specificVersion -ne "" -and $specificVersion -ne "nightly" -and $specificVersion -ne "latest") {
-            Write-Host "Checking specific version: $specificVersion"
-            $release = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag $specificVersion
-            if ($release) {
-                $assetInfo = Get-AssetDownloadUrl -release $release
-                if ($assetInfo.url) {
-                    $isNightlyRelease = $release.prerelease -or $release.tag_name -eq "nightly"
-                    
-                    if ($forceValue -eq "true") {
-                        Write-Host "Force build requested - will build $specificVersion"
-                        if ($isNightlyRelease) {
-                            $shouldBuildNightly = $true
-                            $nightlyVersion = $release.tag_name
-                            $nightlyDownloadUrl = $assetInfo.url
-                            $nightlyFilename = $assetInfo.filename
-                        } else {
-                            $shouldBuildLatest = $true
-                            $latestVersion = $release.tag_name
-                            $latestDownloadUrl = $assetInfo.url
-                            $latestFilename = $assetInfo.filename
-                        }
-                    } else {
-                        $hasExisting = Check-ExistingBuild -tag $release.tag_name -filename $assetInfo.filename
-                        if (-not $hasExisting) {
-                            if ($isNightlyRelease) {
-                                $shouldBuildNightly = $true
-                                $nightlyVersion = $release.tag_name
-                                $nightlyDownloadUrl = $assetInfo.url
-                                $nightlyFilename = $assetInfo.filename
-                            } else {
-                                $shouldBuildLatest = $true
-                                $latestVersion = $release.tag_name
-                                $latestDownloadUrl = $assetInfo.url
-                                $latestFilename = $assetInfo.filename
-                            }
-                            Write-Host "New version to build: $($release.tag_name) ($($assetInfo.filename))"
-                        } else {
-                            Write-Host "Release with tag '$($release.tag_name)' already exists in repository - skipping build."
-                        }
-                    }
-                }
-            }
-        } elseif ($specificVersion -eq "nightly") {
-            # Manual nightly request
-            Write-Host "Manual nightly build requested..."
-            $nightlyRelease = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "nightly"
-            if ($nightlyRelease) {
-                $nightlyVersion = $nightlyRelease.tag_name
-                $assetInfo = Get-AssetDownloadUrl -release $nightlyRelease
-                
-                if ($assetInfo.url) {
-                    if ($forceValue -eq "true") {
-                        $shouldBuildNightly = $true
-                        $nightlyDownloadUrl = $assetInfo.url
-                        $nightlyFilename = $assetInfo.filename
-                        Write-Host "Force build - manual nightly build: $nightlyVersion ($nightlyFilename)"
-                    } else {
-                        $hasExisting = Check-ExistingBuild -tag "nightly" -filename $assetInfo.filename
-                        if (-not $hasExisting) {
-                            $shouldBuildNightly = $true
-                            $nightlyDownloadUrl = $assetInfo.url
-                            $nightlyFilename = $assetInfo.filename
-                            Write-Host "New nightly version found: $nightlyVersion ($nightlyFilename)"
-                        } else {
-                            Write-Host "Nightly $nightlyVersion already built - skipping build."
-                        }
-                    }
-                }
-            }
-        } elseif ($specificVersion -eq "latest") {
-            # Manual latest request
-            Write-Host "Manual latest build requested..."
-            $latestRelease = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
-            if ($latestRelease) {
-                $latestVersion = $latestRelease.tag_name
-                $assetInfo = Get-AssetDownloadUrl -release $latestRelease
-                
-                if ($assetInfo.url) {
-                    if ($forceValue -eq "true") {
-                        $shouldBuildLatest = $true
-                        $latestDownloadUrl = $assetInfo.url
-                        $latestFilename = $assetInfo.filename
-                        Write-Host "Force build - manual latest build: $latestVersion ($latestFilename)"
-                    } else {
-                        $hasExisting = Check-ExistingBuild -tag $latestRelease.tag_name -filename $assetInfo.filename
-                        if (-not $hasExisting) {
-                            $shouldBuildLatest = $true
-                            $latestDownloadUrl = $assetInfo.url
-                            $latestFilename = $assetInfo.filename
-                            Write-Host "New latest version found: $latestVersion ($latestFilename)"
-                        } else {
-                            Write-Host "Release with tag '$($latestRelease.tag_name)' already built - skipping build."
-                        }
-                    }
+            Write-Host "Fetching specific release tag: $specificVersion..."
+            $rel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag $specificVersion
+            if ($rel) {
+                $assetInfo = Get-AssetDownloadUrl -release $rel
+                $isNightly = $rel.prerelease -or $rel.tag_name -eq "nightly"
+                if ($isNightly) {
+                    $nightlyVersion = $rel.tag_name
+                    $nightlyDownloadUrl = $assetInfo.url
+                    $nightlyFilename = $assetInfo.filename
+                } else {
+                    $latestVersion = $rel.tag_name
+                    $latestDownloadUrl = $assetInfo.url
+                    $latestFilename = $assetInfo.filename
                 }
             }
         } else {
-            # For automatic builds (scheduled or push) or manual with empty/default values, check both nightly and latest
-            Write-Host "Automatic build - checking both nightly and latest releases..."
-            
-            # Check nightly release
-            Write-Host "Checking nightly release..."
-            $nightlyRelease = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "nightly"
-            if ($nightlyRelease) {
-                $nightlyVersion = $nightlyRelease.tag_name
-                $assetInfo = Get-AssetDownloadUrl -release $nightlyRelease
-                
-                if ($assetInfo.url) {
-                    $nightlyDownloadUrl = $assetInfo.url
-                    $nightlyFilename = $assetInfo.filename
-                    
-                    if ($forceValue -eq "true") {
-                        $shouldBuildNightly = $true
-                        Write-Host "Force build - will build nightly $nightlyVersion"
-                    } else {
-                        $hasExisting = Check-ExistingBuild -tag "nightly" -filename $nightlyFilename
-                        if (-not $hasExisting) {
-                            $shouldBuildNightly = $true
-                            Write-Host "New nightly version found: $nightlyVersion ($nightlyFilename)"
-                        } else {
-                            Write-Host "Nightly $nightlyVersion already built - skipping build."
-                        }
-                    }
-                }
+            # Fetch latest stable release
+            Write-Host "Fetching latest stable release..."
+            $latestRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
+            if ($latestRel) {
+                $latestAsset = Get-AssetDownloadUrl -release $latestRel
+                $latestVersion = $latestRel.tag_name
+                $latestDownloadUrl = $latestAsset.url
+                $latestFilename = $latestAsset.filename
+                Write-Host "Latest stable release: $latestVersion ($latestFilename)"
             }
 
-            # Check latest release
-            Write-Host "Checking latest release..."
-            $latestRelease = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
-            if ($latestRelease) {
-                $latestVersion = $latestRelease.tag_name
-                $assetInfo = Get-AssetDownloadUrl -release $latestRelease
-                
-                if ($assetInfo.url) {
-                    $latestDownloadUrl = $assetInfo.url
-                    $latestFilename = $assetInfo.filename
-                    
-                    if ($forceValue -eq "true") {
-                        $shouldBuildLatest = $true
-                        Write-Host "Force build - will build latest $latestVersion"
-                    } else {
-                        $hasExisting = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
-                        if (-not $hasExisting) {
-                            $shouldBuildLatest = $true
-                            Write-Host "New latest version found: $latestVersion ($latestFilename)"
-                        } else {
-                            Write-Host "Latest release with tag '$latestVersion' already built - skipping build."
-                        }
-                    }
-                }
+            # Fetch nightly / prerelease
+            Write-Host "Fetching nightly/prerelease..."
+            $nightlyRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "nightly"
+            if (-not $nightlyRel) {
+                # Fallback: find newest prerelease
+                $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
+                if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
+                $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+                $nightlyRel = $allRels | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+            }
+            if ($nightlyRel) {
+                $nightlyAsset = Get-AssetDownloadUrl -release $nightlyRel
+                $nightlyVersion = $nightlyRel.tag_name
+                $nightlyDownloadUrl = $nightlyAsset.url
+                $nightlyFilename = $nightlyAsset.filename
+                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename)"
             }
         }
 
-        # Output results
-        $customTag = "${{ github.event.inputs.tag_name }}"
-        $customReleaseType = "${{ github.event.inputs.release_type }}"
-        if (-not $customReleaseType) { $customReleaseType = "auto" }
-
-        # For manual runs with custom settings, prevent matrix job collision on the same tag
+        # 2. Determine should_build decisions
         if ($isManualRun) {
+            # Manual trigger: determine based on user options
             if ($customTag -and $customTag.Trim() -ne "") {
-                if ($customReleaseType -eq "prerelease") {
-                    $shouldBuildNightly = $true
+                if ($customReleaseType -eq "prerelease" -or ($customReleaseType -eq "auto" -and $customTag -match "nightly|pre|beta|alpha|dev")) {
+                    $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
                     $shouldBuildLatest = $false
-                } elseif ($customReleaseType -eq "stable") {
-                    $shouldBuildNightly = $false
-                    $shouldBuildLatest = $true
                 } else {
-                    if ($customTag -match "nightly|pre|beta|alpha|dev") {
+                    $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                    $shouldBuildNightly = $false
+                }
+            } elseif ($specificVersion -eq "nightly") {
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = $false
+            } elseif ($specificVersion -eq "latest") {
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                $shouldBuildNightly = $false
+            } elseif ($specificVersion -and $specificVersion -ne "") {
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+            } elseif ($customReleaseType -eq "prerelease") {
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = $false
+            } elseif ($customReleaseType -eq "stable") {
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                $shouldBuildNightly = $false
+            } else {
+                # Auto with empty inputs: build both if available
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+            }
+        } else {
+            # Scheduled or Push event: check against existing builds in repository
+            if ($forceBuild) {
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+            } else {
+                if ($nightlyVersion -and $nightlyFilename) {
+                    $hasNightly = Check-ExistingBuild -tag $nightlyVersion -filename $nightlyFilename
+                    if (-not $hasNightly) {
                         $shouldBuildNightly = $true
-                        $shouldBuildLatest = $false
+                        Write-Host "New nightly release detected: $nightlyVersion ($nightlyFilename)"
                     } else {
-                        $shouldBuildNightly = $false
-                        $shouldBuildLatest = $true
+                        Write-Host "Nightly release $nightlyVersion already exists in repository."
                     }
                 }
-            } elseif ($customReleaseType -eq "stable" -and -not $specificVersion) {
-                $shouldBuildNightly = $false
-                $shouldBuildLatest = $true
-            } elseif ($customReleaseType -eq "prerelease" -and -not $specificVersion) {
-                $shouldBuildNightly = $true
-                $shouldBuildLatest = $false
+                if ($latestVersion -and $latestFilename) {
+                    $hasLatest = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
+                    if (-not $hasLatest) {
+                        $shouldBuildLatest = $true
+                        Write-Host "New latest release detected: $latestVersion ($latestFilename)"
+                    } else {
+                        Write-Host "Latest release $latestVersion already exists in repository."
+                    }
+                }
             }
         }
 
@@ -362,12 +287,10 @@ jobs:
         echo "custom_release_type=$customReleaseType" >> $env:GITHUB_OUTPUT
 
         Write-Host "=== Summary ==="
-        Write-Host "Should build nightly: $shouldBuildNightly ($nightlyVersion)"
-        Write-Host "Should build latest: $shouldBuildLatest ($latestVersion)"
+        Write-Host "Should build nightly: $shouldBuildNightly ($nightlyVersion - URL: $nightlyDownloadUrl)"
+        Write-Host "Should build latest: $shouldBuildLatest ($latestVersion - URL: $latestDownloadUrl)"
         if ($customTag) { Write-Host "Custom release tag: $customTag" }
         Write-Host "Release type setting: $customReleaseType"
-        if ($shouldBuildNightly) { Write-Host "Nightly filename: $nightlyFilename" }
-        if ($shouldBuildLatest) { Write-Host "Latest filename: $latestFilename" }
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -429,6 +352,37 @@ jobs:
         $version = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         $buildType = "${{ matrix.build_type }}"
         
+        # Self-healing fallback if download URL wasn't passed via outputs
+        if (-not $downloadUrl -or $downloadUrl.Trim() -eq "") {
+            Write-Host "Download URL not provided by previous step. Querying GitHub API directly for $buildType..."
+            $headers = @{
+                'Accept' = 'application/vnd.github.v3+json'
+                'User-Agent' = 'DLSS-Unlocked-Bot'
+            }
+            if ($env:GITHUB_TOKEN) {
+                $headers['Authorization'] = "token $env:GITHUB_TOKEN"
+            }
+            $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+            $targetRel = $null
+            if ($buildType -eq "nightly") {
+                $targetRel = $releases | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+            } else {
+                $targetRel = $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+            }
+            if ($targetRel) {
+                $targetAsset = $targetRel.assets | Where-Object { $_.name -match "OptiScaler.*\.zip$" -or $_.name -match "OptiScaler.*\.7z$" } | Select-Object -First 1
+                if ($targetAsset) {
+                    $downloadUrl = $targetAsset.browser_download_url
+                    $version = $targetRel.tag_name
+                    Write-Host "Found OptiScaler release asset: $($targetAsset.name) at $downloadUrl"
+                }
+            }
+        }
+        
+        if (-not $downloadUrl -or $downloadUrl.Trim() -eq "") {
+            throw "Could not determine download URL for OptiScaler_DLSSNR ($buildType)"
+        }
+
         Write-Host "Downloading OptiScaler_DLSSNR $buildType ($version) from: $downloadUrl"
         
         # Create temp directory
