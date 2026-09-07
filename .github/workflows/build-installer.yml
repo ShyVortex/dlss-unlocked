@@ -632,7 +632,7 @@ jobs:
             }
         }
         
-        Write-Host "Streamline files in $streamlineDir:"
+        Write-Host "Streamline files in ${streamlineDir}:"
         Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
 
     - name: Prepare release metadata
