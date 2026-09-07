@@ -1,12 +1,12 @@
-# DLSS-Unlocked OptiScaler_DLSSNR Build Script
-# This script downloads or extracts OptiScaler_DLSSNR releases and copies files to the build structure
+# DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script
+# This script downloads or extracts OptiScaler-DLSSNR-PreSR-Multipass releases and copies files to the build structure
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.2.0-dlssnr",
+    [string]$OptiScalerVersion = "v0.6.2-swapchain-fixes",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
-    [string]$StreamlineUrl = "https://cdn.discordapp.com/attachments/1545049227321810974/1545050050609025114/DLSS310.8.0-Streamline2.13.zip?ex=6a9f58bd&is=6a9e073d&hm=d421fc9c1b47dd2c9d7baadaedbbc837077508701650c943c5f1a25cb06611ee&",
+    [string]$StreamlineUrl = "https://files.catbox.moe/3ypg5u.zip",
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
@@ -14,10 +14,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "DLSS-Unlocked OptiScaler_DLSSNR Build Script" -ForegroundColor Green
-Write-Host "===========================================" -ForegroundColor Green
+Write-Host "DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script" -ForegroundColor Green
+Write-Host "==========================================================" -ForegroundColor Green
 
-$Repo = "Dagherbou/OptiScaler_DLSSNR"
+$Repo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass"
 $TempDir = "temp_optiscaler"
 
 # Determine OptiScaler archive path or download
@@ -91,7 +91,7 @@ if (!(Test-Path $DllVersionDir)) {
     New-Item -ItemType Directory -Path $DllVersionDir | Out-Null
 }
 
-Write-Host "Copying OptiScaler_DLSSNR files to build structure..." -ForegroundColor Yellow
+Write-Host "Copying OptiScaler-DLSSNR-PreSR-Multipass files to build structure..." -ForegroundColor Yellow
 
 # Helper to find and copy file recursively
 function Copy-ExtractedFile {
@@ -174,7 +174,7 @@ if ($PatchedDlssnrUrl) {
 }
 
 Write-Host ""
-Write-Host "OptiScaler_DLSSNR and Streamline files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler-DLSSNR-PreSR-Multipass and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize

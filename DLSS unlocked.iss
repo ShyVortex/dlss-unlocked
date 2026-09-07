@@ -1,19 +1,12 @@
 #define MyAppName "DLSS Unlocked"
 #define MyAppVersion "1.0.0.0"
-#define MyAppPublisher "artur_07305"
-;#define MyAppURL "https://discord.com/invite/2JDHx6kcXB"
+#define MyAppPublisher "ShyVortex"
 #define MyAppExeName "my-game.exe"
 
 [Setup]
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-; -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-; This section is temporarily commented out, as it seems that soem AVs are sensitive to the presence of any URL in the executable and increase the risk of false positive
-;AppPublisherURL={#MyAppURL}
-;AppSupportURL={#MyAppURL}
-;AppUpdatesURL={#MyAppURL}
-; -------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 DefaultDirName=c:\games\my-game\bin\x64
 DisableProgramGroupPage=yes
 DirExistsWarning=no
@@ -60,8 +53,8 @@ Name: mainfiles/dllversion; Description: Install as version.dll (alternative hoo
 Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); Types: custom; Flags: exclusive
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
-Name: core; Description: Install OptiScaler_DLSSNR core, upscaler and neural rendering components; Flags: fixed; Types: full custom
-Name: streamline; Description: "Patched NVIDIA Streamline 2.13 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
+Name: core; Description: Install OptiScaler-DLSSNR-PreSR-Multipass core, upscaler and neural rendering components; Flags: fixed; Types: full custom
+Name: streamline; Description: "Patched NVIDIA Streamline 2.14 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
 Name: optional/fgdebug; Description: Debug INI configuration for DLSSG-to-FSR3; Types: custom

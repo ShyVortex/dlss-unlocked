@@ -14,7 +14,7 @@ This directory contains automated workflows for building DLSS-Unlocked installer
 - Push to main/master branch (for testing)
 
 **What it does**:
-1. Checks for new OptiScaler_DLSSNR releases from `Dagherbou/OptiScaler_DLSSNR`
+1. Checks for new OptiScaler releases from `wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass`
 2. Downloads the latest release archive
 3. Extracts and maps binaries (`OptiScaler.dll`, `dlss-unlocked-upscaler.dll`, Neural Rendering forwarder `nvngx.dll_dlssnr.dll`, FidelityFX, and XeSS/XeLL libraries)
 4. Updates version information in `DLSS unlocked.iss`
@@ -23,9 +23,9 @@ This directory contains automated workflows for building DLSS-Unlocked installer
 
 **Manual Usage**:
 ```bash
-# Trigger build with specific OptiScaler_DLSSNR version
+# Trigger build with specific OptiScaler version
 gh workflow run build-installer.yml \
-  -f optiscaler_version=v0.2.0-dlssnr \
+  -f optiscaler_version=v0.6.2-swapchain-fixes \
   -f force_build=true
 
 # Trigger build with nightly or latest version
@@ -78,7 +78,7 @@ Dll version/
 - Base version: `1.0`
 - Timestamp: Build date and time
 
-**Release Naming**: `DLSS Unlocked (latest) - OptiScaler_DLSSNR vX.X.X-dlssnr`
+**Release Naming**: `DLSS Unlocked (latest) - OptiScaler DLSS-NR Pre-SR Multipass vX.X.X`
 
 ## Customization
 
@@ -86,7 +86,7 @@ Dll version/
 Edit the `OPTISCALER_REPO` environment variable in `build-installer.yml`:
 ```yaml
 env:
-  OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
+  OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
 ```
 
 ### Changing Schedule
