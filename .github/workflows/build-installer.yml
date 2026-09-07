@@ -806,12 +806,20 @@ jobs:
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
         
-        $zipOutputName = "dlss-unlocked-standalone-$effectiveTag.zip"
-        $zipOutputPath = "Output\$zipOutputName"
+        # Create standalone zip with 7z to ensure forward slashes '/' (fixes Ark/Linux archive managers)
+        $workspacePath = (Get-Location).Path
+        $fullZipOutputPath = Join-Path $workspacePath $zipOutputPath
+        if (Test-Path $fullZipOutputPath) { Remove-Item $fullZipOutputPath -Force }
         
-        Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
+        Push-Location $manualZipDir
+        try {
+            & 7z a -tzip "$fullZipOutputPath" *
+        } finally {
+            Pop-Location
+        }
+        
         Write-Host "Created OptiScaler_DLSSNR monolithic standalone zip: $zipOutputPath"
-        Get-Item $zipOutputPath | Format-List Name, Length
+        Get-Item $fullZipOutputPath | Format-List Name, Length
 
     - name: Get current date
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')

@@ -261,7 +261,21 @@ if ($CreateStandaloneZip) {
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
     $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }
     $zipOutputPath = "Output\dlss-unlocked-standalone-$effectiveTag.zip"
-    Compress-Archive -Path "$manualZipDir\*" -DestinationPath $zipOutputPath -Force
+    $workspacePath = (Get-Location).Path
+    $fullZipOutputPath = Join-Path $workspacePath $zipOutputPath
+    if (Test-Path $fullZipOutputPath) { Remove-Item $fullZipOutputPath -Force }
+    
+    $7zCmd = Get-Command 7z -ErrorAction SilentlyContinue
+    if ($7zCmd) {
+        Push-Location $manualZipDir
+        try {
+            & 7z a -tzip "$fullZipOutputPath" *
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Compress-Archive -Path "$manualZipDir\*" -DestinationPath $fullZipOutputPath -Force
+    }
     Write-Host "Standalone zip created at: $zipOutputPath" -ForegroundColor Green
 }
 
