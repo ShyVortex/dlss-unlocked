@@ -7,6 +7,7 @@ param(
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://cdn.discordapp.com/attachments/1545049227321810974/1545050050609025114/DLSS310.8.0-Streamline2.13.zip?ex=6a9f58bd&is=6a9e073d&hm=d421fc9c1b47dd2c9d7baadaedbbc837077508701650c943c5f1a25cb06611ee&",
+    [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -157,6 +158,18 @@ if ($StreamlinePath -and (Test-Path $StreamlinePath)) {
         Write-Host "NVIDIA Streamline files downloaded and extracted to $StreamlineDir" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download Streamline files: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+# Download and replace nvngx_dlssnr.dll with patched version
+if ($PatchedDlssnrUrl) {
+    Write-Host "Downloading patched nvngx_dlssnr.dll from $PatchedDlssnrUrl..." -ForegroundColor Yellow
+    $targetDlssnrPath = Join-Path $StreamlineDir "nvngx_dlssnr.dll"
+    try {
+        Invoke-WebRequest -Uri $PatchedDlssnrUrl -OutFile $targetDlssnrPath -UseBasicParsing -TimeoutSec 300
+        Write-Host "Patched nvngx_dlssnr.dll downloaded and replaced at $targetDlssnrPath" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download patched nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
 

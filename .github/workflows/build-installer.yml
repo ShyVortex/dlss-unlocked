@@ -45,6 +45,7 @@ permissions:
 env:
   OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
   STREAMLINE_URL: "https://cdn.discordapp.com/attachments/1545049227321810974/1545050050609025114/DLSS310.8.0-Streamline2.13.zip?ex=6a9f58bd&is=6a9e073d&hm=d421fc9c1b47dd2c9d7baadaedbbc837077508701650c943c5f1a25cb06611ee&"
+  PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
@@ -564,13 +565,14 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.13-v1
+        key: streamline-2.13-v2-patched-dlssnr
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       shell: powershell
       run: |
         $streamlineUrl = "$env:STREAMLINE_URL"
+        $patchedDlssnrUrl = "$env:PATCHED_DLSSNR_URL"
         $streamlineDir = "Dll version\streamline"
         if (-not (Test-Path $streamlineDir)) { New-Item -ItemType Directory -Path $streamlineDir -Force | Out-Null }
         
@@ -601,9 +603,36 @@ jobs:
             Write-Host "Extracting Streamline zip to $streamlineDir..."
             Expand-Archive -Path $tempZip -DestinationPath $streamlineDir -Force
             Remove-Item -Path $tempZip -Force
-            Write-Host "Streamline files extracted:"
-            Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
+            Write-Host "Streamline files extracted."
         }
+        
+        # Download and replace nvngx_dlssnr.dll with patched version
+        if ($patchedDlssnrUrl) {
+            Write-Host "Downloading patched nvngx_dlssnr.dll from: $patchedDlssnrUrl"
+            $targetDlssnrPath = Join-Path $streamlineDir "nvngx_dlssnr.dll"
+            $dlssnrDownloaded = $false
+            $dlssnrRetries = 3
+            $retryCount = 0
+            
+            while (-not $dlssnrDownloaded -and $retryCount -lt $dlssnrRetries) {
+                try {
+                    Invoke-WebRequest -Uri $patchedDlssnrUrl -OutFile $targetDlssnrPath -UseBasicParsing -TimeoutSec 300
+                    $dlssnrDownloaded = $true
+                    Write-Host "Patched nvngx_dlssnr.dll downloaded and replaced in $targetDlssnrPath"
+                } catch {
+                    $retryCount++
+                    Write-Warning "Patched nvngx_dlssnr.dll download attempt $retryCount failed: $($_.Exception.Message)"
+                    if ($retryCount -ge $dlssnrRetries) {
+                        Write-Warning "Could not download patched nvngx_dlssnr.dll after $dlssnrRetries attempts"
+                        break
+                    }
+                    Start-Sleep -Seconds (5 * $retryCount)
+                }
+            }
+        }
+        
+        Write-Host "Streamline files in $streamlineDir:"
+        Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
 
     - name: Prepare release metadata
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
