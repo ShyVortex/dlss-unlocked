@@ -5,6 +5,8 @@ param(
     [string]$OptiScalerPath = "",
     [string]$OptiScalerVersion = "v0.2.0-dlssnr",
     [string]$TagName = "",
+    [string]$StreamlinePath = "",
+    [string]$StreamlineUrl = "https://cdn.discordapp.com/attachments/1545049227321810974/1545050050609025114/DLSS310.8.0-Streamline2.13.zip?ex=6a9f58bd&is=6a9e073d&hm=d421fc9c1b47dd2c9d7baadaedbbc837077508701650c943c5f1a25cb06611ee&",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -135,8 +137,31 @@ Copy-ExtractedFile -Pattern "FidelityFX_v2_LICENSE.md" -DestinationName "Fidelit
 Copy-ExtractedFile -Pattern "DirectX_LICENSE.txt" -DestinationName "DirectX_LICENSE.txt"
 Copy-ExtractedFile -Pattern "RenoDX_ATTRIBUTION.txt" -DestinationName "RenoDX_ATTRIBUTION.txt"
 
+# Handle NVIDIA Streamline download & extraction
+$StreamlineDir = Join-Path $DllVersionDir "streamline"
+if (!(Test-Path $StreamlineDir)) {
+    New-Item -ItemType Directory -Path $StreamlineDir | Out-Null
+}
+
+if ($StreamlinePath -and (Test-Path $StreamlinePath)) {
+    Write-Host "Extracting local NVIDIA Streamline package ($StreamlinePath)..." -ForegroundColor Yellow
+    Expand-Archive -Path $StreamlinePath -DestinationPath $StreamlineDir -Force
+    Write-Host "Streamline files extracted to $StreamlineDir" -ForegroundColor Green
+} elseif ($StreamlineUrl) {
+    $tempStreamlineZip = Join-Path $TempDir "streamline.zip"
+    Write-Host "Downloading NVIDIA Streamline package from $StreamlineUrl..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $StreamlineUrl -OutFile $tempStreamlineZip -UseBasicParsing -TimeoutSec 300
+        Expand-Archive -Path $tempStreamlineZip -DestinationPath $StreamlineDir -Force
+        Remove-Item -Path $tempStreamlineZip -Force
+        Write-Host "NVIDIA Streamline files downloaded and extracted to $StreamlineDir" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download Streamline files: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
 Write-Host ""
-Write-Host "OptiScaler_DLSSNR files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler_DLSSNR and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
@@ -223,6 +248,14 @@ if ($CreateStandaloneZip) {
         if (Test-Path "$DllVersionDir\$cDll") {
             Copy-Item -Path "$DllVersionDir\$cDll" -Destination $optiScalerSubDir -Force
         }
+    }
+
+    # Copy NVIDIA Streamline files
+    $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
+    New-Item -ItemType Directory -Path $streamlineSubDir | Out-Null
+    if (Test-Path "$DllVersionDir\streamline") {
+        Copy-Item -Path "$DllVersionDir\streamline\*" -Destination $streamlineSubDir -Recurse -Force
+        Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
     }
 
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }

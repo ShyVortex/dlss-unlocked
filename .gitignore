@@ -35,6 +35,8 @@ Dll version/FidelityFX_LICENSE.md
 Dll version/FidelityFX_v2_LICENSE.md
 Dll version/DirectX_LICENSE.txt
 Dll version/RenoDX_ATTRIBUTION.txt
+Dll version/streamline/
+temp_streamline/
 DLLSG mod/DisableNvidiaSignatureChecks.reg
 DLLSG mod/RestoreNvidiaSignatureChecks.reg
 
