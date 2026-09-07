@@ -172,25 +172,75 @@ jobs:
         Write-Host "Release type: $customReleaseType"
         Write-Host "Force build: $forceBuild"
 
-        # 1. Fetch releases from GitHub API
+        # 1. Fetch releases and determine build targets
         if ($specificVersion -and $specificVersion -ne "" -and $specificVersion -ne "nightly" -and $specificVersion -ne "latest") {
             Write-Host "Fetching specific release tag: $specificVersion..."
             $rel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag $specificVersion
             if ($rel) {
                 $assetInfo = Get-AssetDownloadUrl -release $rel
-                $isNightly = $rel.prerelease -or $rel.tag_name -eq "nightly"
-                if ($isNightly) {
+                
+                # Determine whether this specific version should run in 'latest' (stable) or 'nightly' (prerelease) matrix pipeline
+                $isPrereleaseBuild = $false
+                if ($customReleaseType -eq "prerelease") {
+                    $isPrereleaseBuild = $true
+                } elseif ($customReleaseType -eq "stable") {
+                    $isPrereleaseBuild = $false
+                } elseif ($customTag -and $customTag.Trim() -ne "") {
+                    $isPrereleaseBuild = ($customTag -match "nightly|pre|beta|alpha|dev")
+                } else {
+                    $isPrereleaseBuild = $rel.prerelease -or ($rel.tag_name -match "nightly|pre|beta|alpha|dev")
+                }
+
+                if ($isPrereleaseBuild) {
                     $nightlyVersion = $rel.tag_name
                     $nightlyDownloadUrl = $assetInfo.url
                     $nightlyFilename = $assetInfo.filename
+                    $shouldBuildNightly = ($assetInfo.url -ne "")
+                    $shouldBuildLatest = $false
+                    Write-Host "Assigned $specificVersion to nightly/prerelease build pipeline (URL: $($assetInfo.url))"
                 } else {
                     $latestVersion = $rel.tag_name
                     $latestDownloadUrl = $assetInfo.url
                     $latestFilename = $assetInfo.filename
+                    $shouldBuildLatest = ($assetInfo.url -ne "")
+                    $shouldBuildNightly = $false
+                    Write-Host "Assigned $specificVersion to latest/stable build pipeline (URL: $($assetInfo.url))"
                 }
+            } else {
+                Write-Error "Could not find release for tag: $specificVersion"
+            }
+        } elseif ($specificVersion -eq "nightly") {
+            Write-Host "Fetching nightly/prerelease..."
+            $nightlyRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "nightly"
+            if (-not $nightlyRel) {
+                $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
+                if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
+                $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+                $nightlyRel = $allRels | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+            }
+            if ($nightlyRel) {
+                $nightlyAsset = Get-AssetDownloadUrl -release $nightlyRel
+                $nightlyVersion = $nightlyRel.tag_name
+                $nightlyDownloadUrl = $nightlyAsset.url
+                $nightlyFilename = $nightlyAsset.filename
+                $shouldBuildNightly = ($nightlyAsset.url -ne "")
+                $shouldBuildLatest = $false
+                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename)"
+            }
+        } elseif ($specificVersion -eq "latest") {
+            Write-Host "Fetching latest stable release..."
+            $latestRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
+            if ($latestRel) {
+                $latestAsset = Get-AssetDownloadUrl -release $latestRel
+                $latestVersion = $latestRel.tag_name
+                $latestDownloadUrl = $latestAsset.url
+                $latestFilename = $latestAsset.filename
+                $shouldBuildLatest = ($latestAsset.url -ne "")
+                $shouldBuildNightly = $false
+                Write-Host "Latest stable release: $latestVersion ($latestFilename)"
             }
         } else {
-            # Fetch latest stable release
+            # Both releases fetched (Push, Schedule, or Auto Manual run)
             Write-Host "Fetching latest stable release..."
             $latestRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
             if ($latestRel) {
@@ -201,11 +251,9 @@ jobs:
                 Write-Host "Latest stable release: $latestVersion ($latestFilename)"
             }
 
-            # Fetch nightly / prerelease
             Write-Host "Fetching nightly/prerelease..."
             $nightlyRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "nightly"
             if (-not $nightlyRel) {
-                # Fallback: find newest prerelease
                 $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
                 if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
                 $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
@@ -218,66 +266,53 @@ jobs:
                 $nightlyFilename = $nightlyAsset.filename
                 Write-Host "Nightly release: $nightlyVersion ($nightlyFilename)"
             }
-        }
 
-        # 2. Determine should_build decisions
-        if ($isPushRun) {
-            # Push trigger: test/build available versions on push to repository
-            $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-            $shouldBuildLatest = ($latestDownloadUrl -ne "")
-            Write-Host "Push event detected: building all available versions (Nightly: $shouldBuildNightly, Latest: $shouldBuildLatest)"
-        } elseif ($isManualRun) {
-            # Manual trigger: determine based on user options
-            if ($customTag -and $customTag.Trim() -ne "") {
-                if ($customReleaseType -eq "prerelease" -or ($customReleaseType -eq "auto" -and $customTag -match "nightly|pre|beta|alpha|dev")) {
+            if ($isPushRun) {
+                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                Write-Host "Push event detected: building available versions (Nightly: $shouldBuildNightly, Latest: $shouldBuildLatest)"
+            } elseif ($isManualRun) {
+                if ($customReleaseType -eq "prerelease") {
                     $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
                     $shouldBuildLatest = $false
-                } else {
+                } elseif ($customReleaseType -eq "stable") {
                     $shouldBuildLatest = ($latestDownloadUrl -ne "")
                     $shouldBuildNightly = $false
-                }
-            } elseif ($specificVersion -eq "nightly") {
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-                $shouldBuildLatest = $false
-            } elseif ($specificVersion -eq "latest") {
-                $shouldBuildLatest = ($latestDownloadUrl -ne "")
-                $shouldBuildNightly = $false
-            } elseif ($specificVersion -and $specificVersion -ne "") {
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-                $shouldBuildLatest = ($latestDownloadUrl -ne "")
-            } elseif ($customReleaseType -eq "prerelease") {
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-                $shouldBuildLatest = $false
-            } elseif ($customReleaseType -eq "stable") {
-                $shouldBuildLatest = ($latestDownloadUrl -ne "")
-                $shouldBuildNightly = $false
-            } else {
-                # Auto with empty inputs: build both if available
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-                $shouldBuildLatest = ($latestDownloadUrl -ne "")
-            }
-        } else {
-            # Scheduled event: check against existing builds in repository
-            if ($forceBuild) {
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
-                $shouldBuildLatest = ($latestDownloadUrl -ne "")
-            } else {
-                if ($nightlyVersion -and $nightlyFilename) {
-                    $hasNightly = Check-ExistingBuild -tag $nightlyVersion -filename $nightlyFilename
-                    if (-not $hasNightly) {
-                        $shouldBuildNightly = $true
-                        Write-Host "New nightly release detected: $nightlyVersion ($nightlyFilename)"
+                } elseif ($customTag -and $customTag.Trim() -ne "") {
+                    if ($customTag -match "nightly|pre|beta|alpha|dev") {
+                        $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                        $shouldBuildLatest = $false
                     } else {
-                        Write-Host "Nightly release $nightlyVersion already exists in repository."
+                        $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                        $shouldBuildNightly = $false
                     }
+                } else {
+                    $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                    $shouldBuildLatest = ($latestDownloadUrl -ne "")
                 }
-                if ($latestVersion -and $latestFilename) {
-                    $hasLatest = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
-                    if (-not $hasLatest) {
-                        $shouldBuildLatest = $true
-                        Write-Host "New latest release detected: $latestVersion ($latestFilename)"
-                    } else {
-                        Write-Host "Latest release $latestVersion already exists in repository."
+            } else {
+                # Scheduled event: check against existing builds in repository
+                if ($forceBuild) {
+                    $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                    $shouldBuildLatest = ($latestDownloadUrl -ne "")
+                } else {
+                    if ($nightlyVersion -and $nightlyFilename) {
+                        $hasNightly = Check-ExistingBuild -tag $nightlyVersion -filename $nightlyFilename
+                        if (-not $hasNightly) {
+                            $shouldBuildNightly = $true
+                            Write-Host "New nightly release detected: $nightlyVersion ($nightlyFilename)"
+                        } else {
+                            Write-Host "Nightly release $nightlyVersion already exists in repository."
+                        }
+                    }
+                    if ($latestVersion -and $latestFilename) {
+                        $hasLatest = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
+                        if (-not $hasLatest) {
+                            $shouldBuildLatest = $true
+                            Write-Host "New latest release detected: $latestVersion ($latestFilename)"
+                        } else {
+                            Write-Host "Latest release $latestVersion already exists in repository."
+                        }
                     }
                 }
             }
