@@ -38,6 +38,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
+3. **(Linux)** Launch a game with the following options: `WINEDLLOVERRIDES="dxgi=n,b" %command%`.
 
 ---
 
