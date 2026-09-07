@@ -124,6 +124,7 @@ Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\licenses"; Flags: 
 [Icons]
 
 [INI]
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "Enabled"; String: "true"; Components: core
 Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: streamline
 Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "fsrfg"; Components: not streamline
 
@@ -141,6 +142,7 @@ begin
     IniPath := ExpandConstant('{app}\OptiScaler.ini');
     if FileExists(IniPath) then
     begin
+      SetIniString('FrameGen', 'Enabled', 'true', IniPath);
       if WizardIsComponentSelected('streamline') then
         SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath)
       else

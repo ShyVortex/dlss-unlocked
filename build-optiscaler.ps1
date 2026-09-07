@@ -202,6 +202,18 @@ if ($CreateStandaloneZip) {
 
     if (Test-Path "$DllVersionDir\OptiScaler.ini") {
         $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
+        # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
+        $oldComment = '; nvngxfg  - Limited to FSR 3 FG (MFG with DLSS Enabler''s dll). Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
+        $newComment = '; nvngxfg  - Uses MFG with DLSS Enabler''s dll. Can be paired with ''dlssg'' (with Streamline) or ''fsrfg'' FG Output. Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
+        if ($optiIniContent.Contains($oldComment)) {
+            $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
+        }
+        # 2. Ensure FrameGen is enabled by default
+        if ($optiIniContent -match '(?m)^Enabled\s*=') {
+            $optiIniContent = $optiIniContent -replace '(?m)^Enabled\s*=.*', 'Enabled=true'
+        } else {
+            $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nEnabled=true"
+        }
         if ($optiIniContent -match '(?m)^FGInput\s*=') {
             $optiIniContent = $optiIniContent -replace '(?m)^FGInput\s*=.*', 'FGInput=nvngxfg'
         } else {
@@ -219,7 +231,7 @@ if ($CreateStandaloneZip) {
         }
         Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
         Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+        Write-Host "  Configured OptiScaler.ini (Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
