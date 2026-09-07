@@ -269,9 +269,10 @@ jobs:
             }
 
             if ($isPushRun) {
-                $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+                # Push event: only build latest (stable) as a CI test/validation build without creating releases
                 $shouldBuildLatest = ($latestDownloadUrl -ne "")
-                Write-Host "Push event detected: building available versions (Nightly: $shouldBuildNightly, Latest: $shouldBuildLatest)"
+                $shouldBuildNightly = $false
+                Write-Host "Push event detected: running CI validation build for latest release (Nightly: skipped, Latest: $shouldBuildLatest)"
             } elseif ($isManualRun) {
                 if ($customReleaseType -eq "prerelease") {
                     $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
@@ -869,7 +870,7 @@ jobs:
         retention-days: 30
 
     - name: Create release
-      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      if: github.event_name != 'push' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.release_meta.outputs.effective_tag }}
