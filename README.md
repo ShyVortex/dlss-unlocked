@@ -17,7 +17,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 ## ✨ Features
 
 - **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
-- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to DLSS Frame Generation (with compatible hardware) or AMD FidelityFX FSR 3.1 Frame Generation (via OptiScaler).
+- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to DLSS Frame Generation (with RTX 40 series GPU, only for the first generated frame) or AMD FidelityFX FSR 3.1 Frame Generation (RTX 20 and 30 series GPUs, all generated frames) via OptiScaler.
 - **Neural Rendering (DLSS-NR):** Full support for Dagherbou's OptiScaler_DLSSNR upscaling backend and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
