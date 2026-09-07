@@ -150,8 +150,9 @@ jobs:
         $customReleaseType = "${{ github.event.inputs.release_type }}"
         if (-not $customReleaseType) { $customReleaseType = "auto" }
         $isManualRun = "${{ github.event_name }}" -eq "workflow_dispatch"
-        $forceBuild = ("${{ github.event.inputs.force_build }}" -eq "true")
+        $isPushRun = "${{ github.event_name }}" -eq "push"
         $isScheduledRun = "${{ github.event_name }}" -eq "schedule"
+        $forceBuild = $isPushRun -or ("${{ github.event.inputs.force_build }}" -eq "true")
         
         $shouldBuildNightly = $false
         $shouldBuildLatest = $false
@@ -164,6 +165,8 @@ jobs:
 
         Write-Host "Event: ${{ github.event_name }}"
         Write-Host "Manual run: $isManualRun"
+        Write-Host "Push run: $isPushRun"
+        Write-Host "Scheduled run: $isScheduledRun"
         Write-Host "Specific version requested: $specificVersion"
         Write-Host "Custom tag: $customTag"
         Write-Host "Release type: $customReleaseType"
@@ -218,7 +221,12 @@ jobs:
         }
 
         # 2. Determine should_build decisions
-        if ($isManualRun) {
+        if ($isPushRun) {
+            # Push trigger: test/build available versions on push to repository
+            $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
+            $shouldBuildLatest = ($latestDownloadUrl -ne "")
+            Write-Host "Push event detected: building all available versions (Nightly: $shouldBuildNightly, Latest: $shouldBuildLatest)"
+        } elseif ($isManualRun) {
             # Manual trigger: determine based on user options
             if ($customTag -and $customTag.Trim() -ne "") {
                 if ($customReleaseType -eq "prerelease" -or ($customReleaseType -eq "auto" -and $customTag -match "nightly|pre|beta|alpha|dev")) {
@@ -249,7 +257,7 @@ jobs:
                 $shouldBuildLatest = ($latestDownloadUrl -ne "")
             }
         } else {
-            # Scheduled or Push event: check against existing builds in repository
+            # Scheduled event: check against existing builds in repository
             if ($forceBuild) {
                 $shouldBuildNightly = ($nightlyDownloadUrl -ne "")
                 $shouldBuildLatest = ($latestDownloadUrl -ne "")
