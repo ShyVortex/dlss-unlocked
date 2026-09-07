@@ -61,7 +61,7 @@ Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); 
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
 Name: core; Description: Install OptiScaler_DLSSNR core, upscaler and neural rendering components; Flags: fixed; Types: full custom
-Name: streamline; Description: "Patched NVIDIA Streamline 2.13 (recommended for DLSS 5 & MFG)"; Types: custom; Flags: checkablealone
+Name: streamline; Description: "Patched NVIDIA Streamline 2.13 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
 Name: optional/fgdebug; Description: Debug INI configuration for DLSSG-to-FSR3; Types: custom
@@ -130,6 +130,28 @@ Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\licenses"; Flags: 
 
 [Icons]
 
+[INI]
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: streamline
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "fsrfg"; Components: not streamline
+
 [Run]
 Filename: "{app}\licenses\Readme (DLSS unlocked).txt"; Description: "View the DLSS Unlocked README file"; Flags: postinstall shellexec skipifsilent
 Filename: "{app}\OptiScaler.ini"; Description: "Edit the configuration file (optional)"; Flags: postinstall shellexec skipifsilent unchecked
+
+[Code]
+procedure CurStepChanged(CurStep: TSetupStep);
+var
+  IniPath: String;
+begin
+  if CurStep = ssPostInstall then
+  begin
+    IniPath := ExpandConstant('{app}\OptiScaler.ini');
+    if FileExists(IniPath) then
+    begin
+      if WizardIsComponentSelected('streamline') then
+        SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath)
+      else
+        SetIniString('FrameGen', 'FGOutput', 'fsrfg', IniPath);
+    end;
+  end;
+end;

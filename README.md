@@ -11,14 +11,13 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 ---
 
 ## ⚠️ Requirements
-- DLSS and DLSS-G dll files from NVIDIA Streamline v310.8 onwards: `nvngx_dlss.dll`, `nvngx_dlssg.dll`
-- DLSS-NR library file (Streamline v310.8 onwards), patched to work with RTX 20xx and 30xx series GPUs: `nvngx_dlssnr.dll`
+- DLSS-NR library file (Streamline v310.8 onwards), patched to work with RTX 20xx and 30xx series GPUs: `nvngx_dlssnr.dll`, to be placed in the same directory as the game's `.exe` file.
 - Game that natively supports DLSS Upscaling and DLSS Frame Generation
 
 ## ✨ Features
 
 - **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
-- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to AMD FidelityFX FSR 3.1 Frame Generation (via Nukem9 mod & OptiScaler).
+- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to DLSS Frame Generation (with compatible hardware) or AMD FidelityFX FSR 3.1 Frame Generation (via OptiScaler).
 - **Neural Rendering (DLSS-NR):** Full support for Dagherbou's OptiScaler_DLSSNR upscaling backend and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).

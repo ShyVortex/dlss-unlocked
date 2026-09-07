@@ -740,9 +740,9 @@ jobs:
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGInput=nvngxfg"
             }
             if ($optiIniContent -match '(?m)^FGOutput\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=fsrfg'
+                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=dlssg'
             } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=fsrfg"
+                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=dlssg"
             }
             if ($optiIniContent -match '(?m)^FGNvngxReplacement\s*=') {
                 $optiIniContent = $optiIniContent -replace '(?m)^FGNvngxReplacement\s*=.*', 'FGNvngxReplacement=Arturs'
@@ -751,7 +751,7 @@ jobs:
             }
             Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=fsrfg, FGNvngxReplacement=Arturs)"
+            Write-Host "Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force

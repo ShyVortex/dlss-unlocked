@@ -195,9 +195,9 @@ if ($CreateStandaloneZip) {
             $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGInput=nvngxfg"
         }
         if ($optiIniContent -match '(?m)^FGOutput\s*=') {
-            $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=fsrfg'
+            $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=dlssg'
         } else {
-            $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=fsrfg"
+            $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=dlssg"
         }
         if ($optiIniContent -match '(?m)^FGNvngxReplacement\s*=') {
             $optiIniContent = $optiIniContent -replace '(?m)^FGNvngxReplacement\s*=.*', 'FGNvngxReplacement=Arturs'
@@ -206,7 +206,7 @@ if ($CreateStandaloneZip) {
         }
         Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
         Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=fsrfg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+        Write-Host "  Configured OptiScaler.ini (FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
