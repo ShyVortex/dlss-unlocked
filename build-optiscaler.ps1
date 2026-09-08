@@ -216,27 +216,64 @@ if ($CreateStandaloneZip) {
         }
         # 2. Helper to safely update a key within a specific INI section
         function Set-IniKey {
-            param($content, $section, $key, $value)
-            $escapedSec = [regex]::Escape($section)
-            $escapedKey = [regex]::Escape($key)
-            if ($content -match "(?m)^\[$escapedSec\]") {
-                $pattern = "(?ms)(^\[$escapedSec\].*?)(^$escapedKey\s*=.*?$)(.*?)(?=^\[|\z)"
-                if ($content -match $pattern) {
-                    return [regex]::Replace($content, $pattern, "${1}$key=$value${3}")
-                } else {
-                    return [regex]::Replace($content, "(?m)^\[$escapedSec\]\r?\n", "`$0$key=$value`r`n")
+            param(
+                [string]$Content,
+                [string]$Section,
+                [string]$Key,
+                [string]$Value
+            )
+            $lines = $Content -split "\r?\n"
+            $newLines = [System.Collections.Generic.List[string]]::new()
+            $currentSection = ""
+            $keyFound = $false
+            $sectionFound = $false
+
+            foreach ($line in $lines) {
+                $trimmed = $line.Trim()
+                if ($trimmed -match '^\[([^\]]+)\]$') {
+                    if ($currentSection -eq $Section -and -not $keyFound) {
+                        $newLines.Add("$Key=$Value")
+                        $keyFound = $true
+                    }
+                    $currentSection = $matches[1].Trim()
+                    if ($currentSection -eq $Section) {
+                        $sectionFound = $true
+                    }
+                    $newLines.Add($line)
+                    continue
                 }
-            } else {
-                return "$content`r`n[$section]`r`n$key=$value`r`n"
+
+                if ($currentSection -eq $Section -and $trimmed -match "^$([regex]::Escape($Key))\s*=") {
+                    $newLines.Add("$Key=$Value")
+                    $keyFound = $true
+                    continue
+                }
+
+                $newLines.Add($line)
             }
+
+            if ($currentSection -eq $Section -and -not $keyFound) {
+                $newLines.Add("$Key=$Value")
+                $keyFound = $true
+            }
+
+            if (-not $sectionFound) {
+                if ($newLines.Count -gt 0 -and $newLines[$newLines.Count - 1] -ne "") {
+                    $newLines.Add("")
+                }
+                $newLines.Add("[$Section]")
+                $newLines.Add("$Key=$Value")
+            }
+
+            return ($newLines -join "`r`n")
         }
 
         # Configure [DlssNr] and [FrameGen]
-        $optiIniContent = Set-IniKey -content $optiIniContent -section "DlssNr" -key "Enabled" -value "auto"
-        $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "Enabled" -value "true"
-        $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGInput" -value "nvngxfg"
-        $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGOutput" -value "dlssg"
-        $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGNvngxReplacement" -value "Arturs"
+        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "DlssNr" -Key "Enabled" -Value "auto"
+        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "Enabled" -Value "true"
+        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGInput" -Value "nvngxfg"
+        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
+        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
 
         Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
         Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
