@@ -916,6 +916,32 @@ jobs:
             }
             Write-Host "Copied NVIDIA Streamline files to standalone archive OptiScaler/streamline"
         }
+
+        # 3. Licenses & documentation folder
+        $licensesSubDir = Join-Path $manualZipDir "Licenses"
+        New-Item -ItemType Directory -Path $licensesSubDir -Force | Out-Null
+        if (Test-Path "Licenses") {
+            Copy-Item -Path "Licenses\*" -Destination $licensesSubDir -Recurse -Force
+        }
+        if (Test-Path "Readme (DLSS unlocked).txt") {
+            Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $licensesSubDir -Force
+        }
+        if (Test-Path "License (DLSS unlocked).txt") {
+            Copy-Item -Path "License (DLSS unlocked).txt" -Destination $licensesSubDir -Force
+        }
+        $optiLicenses = @(
+            "DirectX_LICENSE.txt",
+            "RenoDX_ATTRIBUTION.txt",
+            "FidelityFX_v2_LICENSE.md",
+            "FidelityFX_LICENSE.md",
+            "XeSS_LICENSE.txt"
+        )
+        foreach ($lic in $optiLicenses) {
+            if (Test-Path "Dll version\$lic") {
+                Copy-Item -Path "Dll version\$lic" -Destination $licensesSubDir -Force
+            }
+        }
+        Write-Host "Copied Licenses folder to standalone archive"
         
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
@@ -985,6 +1011,8 @@ jobs:
           2. Extract contents directly into your game directory alongside the game `.exe`:
              - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
+             - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14 runtime files
+             - **`Licenses/` folder:** official licenses and legal disclaimer
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}

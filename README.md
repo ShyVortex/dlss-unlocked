@@ -48,6 +48,7 @@ Get the latest release from the **[Releases](../../releases)** page.
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
    - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14 runtime files
+   - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, third-party libraries, and legal disclaimers
 3. **(Linux)** Launch a game with the following options: `WINEDLLOVERRIDES="dxgi=n,b" %command%`.
 
 ---
@@ -113,3 +114,5 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **Third-Party Binaries:** Proprietary binaries (including NVIDIA Streamline runtime components) are not hosted or distributed directly within this Git repository. Automated CI release workflows bundle publicly accessible runtime files solely for interoperability and convenience to provide users with a seamless, out-of-the-box modding experience.
 - **Intended Use:** This software is intended solely for single-player games to enhance hardware performance and feature accessibility. **Do not use in multiplayer games or titles protected by anti-cheat systems.**
 - **Disclaimer of Warranty:** This project is provided "as is", without warranty of any kind, express or implied. Use at your own risk.
+
+For the full legal statement, license disclosures, and terms, please review [DISCLAIMER](Licenses/DISCLAIMER.txt).

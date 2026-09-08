@@ -338,6 +338,32 @@ if ($CreateStandaloneZip) {
         Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
     }
 
+    # 3. Licenses & documentation folder
+    $licensesSubDir = Join-Path $manualZipDir "Licenses"
+    New-Item -ItemType Directory -Path $licensesSubDir | Out-Null
+    if (Test-Path "Licenses") {
+        Copy-Item -Path "Licenses\*" -Destination $licensesSubDir -Recurse -Force
+    }
+    if (Test-Path "Readme (DLSS unlocked).txt") {
+        Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $licensesSubDir -Force
+    }
+    if (Test-Path "License (DLSS unlocked).txt") {
+        Copy-Item -Path "License (DLSS unlocked).txt" -Destination $licensesSubDir -Force
+    }
+    $optiLicenses = @(
+        "DirectX_LICENSE.txt",
+        "RenoDX_ATTRIBUTION.txt",
+        "FidelityFX_v2_LICENSE.md",
+        "FidelityFX_LICENSE.md",
+        "XeSS_LICENSE.txt"
+    )
+    foreach ($lic in $optiLicenses) {
+        if (Test-Path "$DllVersionDir\$lic") {
+            Copy-Item -Path "$DllVersionDir\$lic" -Destination $licensesSubDir -Force
+        }
+    }
+    Write-Host "  Licenses -> $licensesSubDir" -ForegroundColor Gray
+
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
     $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }
     $zipOutputPath = "Output\dlss-unlocked-standalone-$effectiveTag.zip"

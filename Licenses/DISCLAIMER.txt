@@ -1,0 +1,78 @@
+================================================================================
+                    DLSS-UNLOCKED - LEGAL DISCLAIMER & NOTICES
+================================================================================
+
+1. PROJECT NATURE & INTEROPERABILITY
+------------------------------------
+DLSS Unlocked is an independent, non-commercial, open-source interoperability tool
+and compatibility wrapper. Its sole purpose is to enhance hardware feature
+accessibility, performance, and compatibility by bridging modern graphics APIs
+(DirectX 12, Vulkan) and vendor-agnostic upscaling / frame generation technologies
+across supported hardware.
+
+This project is developed and distributed pursuant to interoperability and
+compatibility provisions under applicable copyright laws.
+
+
+2. TRADEMARK & INTELLECTUAL PROPERTY NOTICES
+--------------------------------------------
+- NVIDIA, the NVIDIA logo, GeForce, GeForce RTX, DLSS, Deep Learning Super Sampling,
+  Streamline, and NVNGX are trademarks and/or registered trademarks of NVIDIA
+  Corporation in the United States and other countries.
+- AMD, the AMD Arrow logo, Radeon, FidelityFX, FSR, and combinations thereof are
+  trademarks of Advanced Micro Devices, Inc.
+- Intel, the Intel logo, Intel Arc, and XeSS are trademarks of Intel Corporation
+  or its subsidiaries.
+- Microsoft, DirectX, and Windows are registered trademarks of Microsoft Corporation.
+- All other product names, trademarks, logos, and brands referenced in this software
+  are the property of their respective owners. Reference to any third-party trademarks
+  is strictly for identification and compatibility purposes and does not imply any
+  affiliation, sponsorship, or endorsement.
+
+
+3. NON-AFFILIATION DISCLAIMER
+-----------------------------
+This project is an independent community development. Neither this project, nor its
+author, nor any contributor is affiliated with, authorized by, sponsored by, or
+endorsed by NVIDIA Corporation, Advanced Micro Devices, Inc., Intel Corporation,
+or any game developer or publisher.
+
+
+4. REDISTRIBUTION OF THIRD-PARTY LIBRARIES & SDCS
+-------------------------------------------------
+Automated build processes and releases package publicly redistributable components
+under their respective permissive open-source licenses:
+- NVIDIA Streamline runtime components (sl.interposer.dll, etc.) are distributed
+  under the NVIDIA Streamline MIT License (see NVIDIA_Streamline_LICENSE.txt).
+- AMD FidelityFX components (amd_fidelityfx_*.dll) are distributed under the
+  AMD FidelityFX MIT License (see AMD_FidelityFX_LICENSE.txt).
+- Intel XeSS components (libxess.dll, libxell.dll, etc.) are distributed under the
+  Intel Simplified Software License (see Intel_XeSS_LICENSE.txt).
+- DLSSG-to-FSR3 components are distributed under their respective permissive terms
+  (see DLSSG_to_FSR3_LICENSE.txt).
+
+
+5. SAFETY NOTICE: SINGLE-PLAYER GAMES ONLY (ANTI-CHEAT WARNING)
+---------------------------------------------------------------
+THIS MODIFICATION HOOKS GRAPHICS AND SYSTEM APIS AT RUNTIME (DXGI, D3D12, VULKAN).
+DO NOT USE THIS SOFTWARE IN MULTIPLAYER GAMES OR TITLES PROTECTED BY ANTI-CHEAT
+SOFTWARE (such as Easy Anti-Cheat, BattlEye, Ricochet, Vanguard, VAC, or similar).
+Anti-cheat systems may flag DLL wrappers and runtime hooks as unauthorized third-party
+modifications, which may result in permanent account bans or terminations.
+Use is intended exclusively for offline, single-player titles.
+
+
+6. DISCLAIMER OF WARRANTY & LIMITATION OF LIABILITY
+---------------------------------------------------
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT ARE
+DISCLAIMED.
+
+IN NO EVENT SHALL THE COPYRIGHT HOLDERS, CONTRIBUTORS, OR AFFILIATED DEVELOPERS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, LOSS OF USE, DATA, SAVED GAMES, REVENUE, OR
+PROFITS; BUSINESS INTERRUPTION; SYSTEM INSTABILITY; HARDWARE MALFUNCTION; OR ACCOUNT
+PENALTIES) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
