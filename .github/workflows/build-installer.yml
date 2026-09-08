@@ -44,7 +44,7 @@ permissions:
 
 env:
   OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
-  STREAMLINE_URL: "https://files.catbox.moe/ta7sxc.zip"
+  STREAMLINE_URL: "https://files.catbox.moe/cw5hfd.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
@@ -566,7 +566,7 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.13-patched-dlssnr
+        key: streamline-2.14-patched-dlssnr
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -605,6 +605,12 @@ jobs:
             Expand-Archive -Path $tempZip -DestinationPath $streamlineDir -Force
             Remove-Item -Path $tempZip -Force
             Write-Host "Streamline files extracted."
+        }
+
+        # Exclude sl.nvperf.dll if present in source Streamline archive
+        Get-ChildItem -Path $streamlineDir -Filter "sl.nvperf.dll" -Recurse -File | ForEach-Object {
+            Write-Host "Excluding $($_.FullName) from Streamline distribution..."
+            Remove-Item $_.FullName -Force
         }
         
         # Download and replace nvngx_dlssnr.dll with patched version
@@ -841,7 +847,9 @@ jobs:
         $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
         New-Item -ItemType Directory -Path $streamlineSubDir -Force | Out-Null
         if (Test-Path "Dll version\streamline") {
-            Copy-Item -Path "Dll version\streamline\*" -Destination $streamlineSubDir -Recurse -Force
+            Get-ChildItem -Path "Dll version\streamline" | Where-Object { $_.Name -ne "sl.nvperf.dll" } | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
+            }
             Write-Host "Copied NVIDIA Streamline files to standalone archive OptiScaler/streamline"
         }
         
@@ -891,10 +899,10 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.13, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
           - **OptiScaler Backend**: OptiScaler-DLSSNR-PreSR-Multipass `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-          - **Patched NVIDIA Streamline 2.13**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`) with patched `nvngx_dlssnr.dll`
+          - **Patched NVIDIA Streamline 2.14**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`) with patched `nvngx_dlssnr.dll`
           - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler package

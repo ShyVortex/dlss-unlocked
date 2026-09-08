@@ -6,7 +6,7 @@ param(
     [string]$OptiScalerVersion = "v0.6.2-swapchain-fixes",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
-    [string]$StreamlineUrl = "https://files.catbox.moe/ta7sxc.zip",
+    [string]$StreamlineUrl = "https://files.catbox.moe/cw5hfd.zip",
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
@@ -161,6 +161,12 @@ if ($StreamlinePath -and (Test-Path $StreamlinePath)) {
     }
 }
 
+# Exclude sl.nvperf.dll if present in source Streamline archive
+Get-ChildItem -Path $StreamlineDir -Filter "sl.nvperf.dll" -Recurse -File | ForEach-Object {
+    Write-Host "Excluding $($_.FullName) from Streamline files..." -ForegroundColor Yellow
+    Remove-Item $_.FullName -Force
+}
+
 # Download and replace nvngx_dlssnr.dll with patched version
 if ($PatchedDlssnrUrl) {
     Write-Host "Downloading patched nvngx_dlssnr.dll from $PatchedDlssnrUrl..." -ForegroundColor Yellow
@@ -279,7 +285,9 @@ if ($CreateStandaloneZip) {
     $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
     New-Item -ItemType Directory -Path $streamlineSubDir | Out-Null
     if (Test-Path "$DllVersionDir\streamline") {
-        Copy-Item -Path "$DllVersionDir\streamline\*" -Destination $streamlineSubDir -Recurse -Force
+        Get-ChildItem -Path "$DllVersionDir\streamline" | Where-Object { $_.Name -ne "sl.nvperf.dll" } | ForEach-Object {
+            Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
+        }
         Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
     }
 

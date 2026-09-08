@@ -54,7 +54,7 @@ Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); 
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
 Name: core; Description: Install OptiScaler-DLSSNR-PreSR-Multipass core, upscaler and neural rendering components; Flags: fixed; Types: full custom
-Name: streamline; Description: "Patched NVIDIA Streamline 2.13 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
+Name: streamline; Description: "Patched NVIDIA Streamline 2.14 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
 Name: optional/fgdebug; Description: Debug INI configuration for DLSSG-to-FSR3; Types: custom
@@ -108,7 +108,7 @@ Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler
 Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: optional/fgdebug
 
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
-Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
+Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
 
 ; 4. Documentation & Licenses ({app}\licenses)
 Source: "Readme (DLSS unlocked).txt"; DestDir: "{app}\licenses"; Flags: ignoreversion; Components: core
