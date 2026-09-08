@@ -338,17 +338,11 @@ if ($CreateStandaloneZip) {
         Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
     }
 
-    # 3. Licenses & documentation folder
+    # 3. Licenses folder
     $licensesSubDir = Join-Path $manualZipDir "Licenses"
     New-Item -ItemType Directory -Path $licensesSubDir | Out-Null
     if (Test-Path "Licenses") {
         Copy-Item -Path "Licenses\*" -Destination $licensesSubDir -Recurse -Force
-    }
-    if (Test-Path "Readme (DLSS unlocked).txt") {
-        Copy-Item -Path "Readme (DLSS unlocked).txt" -Destination $licensesSubDir -Force
-    }
-    if (Test-Path "License (DLSS unlocked).txt") {
-        Copy-Item -Path "License (DLSS unlocked).txt" -Destination $licensesSubDir -Force
     }
     $optiLicenses = @(
         "DirectX_LICENSE.txt",

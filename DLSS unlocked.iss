@@ -111,9 +111,7 @@ Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignor
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
 Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
 
-; 4. Documentation & Licenses ({app}\Licenses)
-Source: "Readme (DLSS unlocked).txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion; Components: core
-Source: "License (DLSS unlocked).txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+; 4. Licenses ({app}\Licenses)
 Source: "Licenses\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "DLLSG mod\READ ME.txt"; DestDir: "{app}\Licenses"; DestName: "READ ME (DLSSG to FSR3 mod).txt"; Flags: ignoreversion; Components: core
 Source: "DLLSG mod\LICENSE.txt"; DestDir: "{app}\Licenses"; DestName: "LICENSE (DLSSG to FSR3 mod).txt"; Flags: ignoreversion; Components: core
@@ -133,7 +131,7 @@ Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: 
 Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGNvngxReplacement"; String: "Arturs"; Components: core
 
 [Run]
-Filename: "{app}\Licenses\Readme (DLSS unlocked).txt"; Description: "View the DLSS Unlocked README file"; Flags: postinstall shellexec skipifsilent
+Filename: "{app}\Licenses\DISCLAIMER.txt"; Description: "View the DLSS Unlocked Disclaimer and Licenses"; Flags: postinstall shellexec skipifsilent unchecked
 Filename: "{app}\OptiScaler.ini"; Description: "Edit the configuration file (optional)"; Flags: postinstall shellexec skipifsilent unchecked
 
 [Code]

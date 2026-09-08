@@ -22,6 +22,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 ## ⚠️ Requirements
 - Game that natively supports DLSS Upscaling and DLSS Frame Generation
+- For Multi-Frame Generation to be enabled in the game's graphics settings, it must natively support the feature
 
 ## ✨ Features
 
