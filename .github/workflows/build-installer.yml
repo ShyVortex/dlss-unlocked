@@ -779,30 +779,33 @@ jobs:
             if ($optiIniContent.Contains($oldComment)) {
                 $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
             }
-            # 2. Ensure FrameGen is enabled by default
-            if ($optiIniContent -match '(?m)^Enabled\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^Enabled\s*=.*', 'Enabled=true'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nEnabled=true"
+            # 2. Helper to safely update a key within a specific INI section
+            function Set-IniKey {
+                param($content, $section, $key, $value)
+                $escapedSec = [regex]::Escape($section)
+                $escapedKey = [regex]::Escape($key)
+                if ($content -match "(?m)^\[$escapedSec\]") {
+                    $pattern = "(?ms)(^\[$escapedSec\].*?)(^$escapedKey\s*=.*?$)(.*?)(?=^\[|\z)"
+                    if ($content -match $pattern) {
+                        return [regex]::Replace($content, $pattern, "${1}$key=$value${3}")
+                    } else {
+                        return [regex]::Replace($content, "(?m)^\[$escapedSec\]\r?\n", "`$0$key=$value`r`n")
+                    }
+                } else {
+                    return "$content`r`n[$section]`r`n$key=$value`r`n"
+                }
             }
-            if ($optiIniContent -match '(?m)^FGInput\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^FGInput\s*=.*', 'FGInput=nvngxfg'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGInput=nvngxfg"
-            }
-            if ($optiIniContent -match '(?m)^FGOutput\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^FGOutput\s*=.*', 'FGOutput=dlssg'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGOutput=dlssg"
-            }
-            if ($optiIniContent -match '(?m)^FGNvngxReplacement\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^FGNvngxReplacement\s*=.*', 'FGNvngxReplacement=Arturs'
-            } else {
-                $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nFGNvngxReplacement=Arturs"
-            }
+
+            # Configure [DlssNr] and [FrameGen]
+            $optiIniContent = Set-IniKey -content $optiIniContent -section "DlssNr" -key "Enabled" -value "auto"
+            $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "Enabled" -value "true"
+            $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGInput" -value "nvngxfg"
+            $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGOutput" -value "dlssg"
+            $optiIniContent = Set-IniKey -content $optiIniContent -section "FrameGen" -key "FGNvngxReplacement" -value "Arturs"
+
             Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)"
+            Write-Host "Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
