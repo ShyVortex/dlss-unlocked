@@ -127,8 +127,9 @@ Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\licenses"; Flags: 
 [INI]
 Filename: "{app}\OptiScaler.ini"; Section: "DlssNr"; Key: "Enabled"; String: "auto"; Components: core
 Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "Enabled"; String: "true"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: streamline
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "fsrfg"; Components: not streamline
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGInput"; String: "nvngxfg"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGNvngxReplacement"; String: "Arturs"; Components: core
 
 [Run]
 Filename: "{app}\licenses\Readme (DLSS unlocked).txt"; Description: "View the DLSS Unlocked README file"; Flags: postinstall shellexec skipifsilent
@@ -146,10 +147,9 @@ begin
     begin
       SetIniString('DlssNr', 'Enabled', 'auto', IniPath);
       SetIniString('FrameGen', 'Enabled', 'true', IniPath);
-      if WizardIsComponentSelected('streamline') then
-        SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath)
-      else
-        SetIniString('FrameGen', 'FGOutput', 'fsrfg', IniPath);
+      SetIniString('FrameGen', 'FGInput', 'nvngxfg', IniPath);
+      SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath);
+      SetIniString('FrameGen', 'FGNvngxReplacement', 'Arturs', IniPath);
     end;
   end;
 end;

@@ -185,6 +185,80 @@ Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
+# Configure OptiScaler.ini (DlssNr and FrameGen)
+if (Test-Path "$DllVersionDir\OptiScaler.ini") {
+    $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
+    # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
+    $oldComment = '; nvngxfg  - Limited to FSR 3 FG (MFG with DLSS Enabler''s dll). Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
+    $newComment = '; nvngxfg  - Uses MFG with DLSS Enabler''s dll. Can be paired with ''dlssg'' (with Streamline) or ''fsrfg'' FG Output. Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
+    if ($optiIniContent.Contains($oldComment)) {
+        $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
+    }
+    # 2. Helper to safely update a key within a specific INI section
+    function Set-IniKey {
+        param(
+            [string]$Content,
+            [string]$Section,
+            [string]$Key,
+            [string]$Value
+        )
+        $lines = $Content -split "\r?\n"
+        $newLines = [System.Collections.Generic.List[string]]::new()
+        $currentSection = ""
+        $keyFound = $false
+        $sectionFound = $false
+
+        foreach ($line in $lines) {
+            $trimmed = $line.Trim()
+            if ($trimmed -match '^\[([^\]]+)\]$') {
+                if ($currentSection -eq $Section -and -not $keyFound) {
+                    $newLines.Add("$Key=$Value")
+                    $keyFound = $true
+                }
+                $currentSection = $matches[1].Trim()
+                if ($currentSection -eq $Section) {
+                    $sectionFound = $true
+                }
+                $newLines.Add($line)
+                continue
+            }
+
+            if ($currentSection -eq $Section -and $trimmed -match "^$([regex]::Escape($Key))\s*=") {
+                $newLines.Add("$Key=$Value")
+                $keyFound = $true
+                continue
+            }
+
+            $newLines.Add($line)
+        }
+
+        if ($currentSection -eq $Section -and -not $keyFound) {
+            $newLines.Add("$Key=$Value")
+            $keyFound = $true
+        }
+
+        if (-not $sectionFound) {
+            if ($newLines.Count -gt 0 -and $newLines[$newLines.Count - 1] -ne "") {
+                $newLines.Add("")
+            }
+            $newLines.Add("[$Section]")
+            $newLines.Add("$Key=$Value")
+        }
+
+        return ($newLines -join "`r`n")
+    }
+
+    # Configure [DlssNr] and [FrameGen]
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "DlssNr" -Key "Enabled" -Value "auto"
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "Enabled" -Value "true"
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGInput" -Value "nvngxfg"
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
+
+    Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
+    Write-Host "Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+}
+
 if ($CreateStandaloneZip) {
     Write-Host "Creating standalone manual package (dxgi.dll zip)..." -ForegroundColor Yellow
     $manualZipDir = Join-Path $TempDir "manual_package"
@@ -207,77 +281,7 @@ if ($CreateStandaloneZip) {
     Copy-Item -Path $sourceDll -Destination "$manualZipDir\dxgi.dll" -Force
 
     if (Test-Path "$DllVersionDir\OptiScaler.ini") {
-        $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
-        # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
-        $oldComment = '; nvngxfg  - Limited to FSR 3 FG (MFG with DLSS Enabler''s dll). Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-        $newComment = '; nvngxfg  - Uses MFG with DLSS Enabler''s dll. Can be paired with ''dlssg'' (with Streamline) or ''fsrfg'' FG Output. Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-        if ($optiIniContent.Contains($oldComment)) {
-            $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
-        }
-        # 2. Helper to safely update a key within a specific INI section
-        function Set-IniKey {
-            param(
-                [string]$Content,
-                [string]$Section,
-                [string]$Key,
-                [string]$Value
-            )
-            $lines = $Content -split "\r?\n"
-            $newLines = [System.Collections.Generic.List[string]]::new()
-            $currentSection = ""
-            $keyFound = $false
-            $sectionFound = $false
-
-            foreach ($line in $lines) {
-                $trimmed = $line.Trim()
-                if ($trimmed -match '^\[([^\]]+)\]$') {
-                    if ($currentSection -eq $Section -and -not $keyFound) {
-                        $newLines.Add("$Key=$Value")
-                        $keyFound = $true
-                    }
-                    $currentSection = $matches[1].Trim()
-                    if ($currentSection -eq $Section) {
-                        $sectionFound = $true
-                    }
-                    $newLines.Add($line)
-                    continue
-                }
-
-                if ($currentSection -eq $Section -and $trimmed -match "^$([regex]::Escape($Key))\s*=") {
-                    $newLines.Add("$Key=$Value")
-                    $keyFound = $true
-                    continue
-                }
-
-                $newLines.Add($line)
-            }
-
-            if ($currentSection -eq $Section -and -not $keyFound) {
-                $newLines.Add("$Key=$Value")
-                $keyFound = $true
-            }
-
-            if (-not $sectionFound) {
-                if ($newLines.Count -gt 0 -and $newLines[$newLines.Count - 1] -ne "") {
-                    $newLines.Add("")
-                }
-                $newLines.Add("[$Section]")
-                $newLines.Add("$Key=$Value")
-            }
-
-            return ($newLines -join "`r`n")
-        }
-
-        # Configure [DlssNr] and [FrameGen]
-        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "DlssNr" -Key "Enabled" -Value "auto"
-        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "Enabled" -Value "true"
-        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGInput" -Value "nvngxfg"
-        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
-        $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
-
-        Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-        Write-Host "  Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+        Copy-Item -Path "$DllVersionDir\OptiScaler.ini" -Destination "$manualZipDir\OptiScaler.ini" -Force
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force

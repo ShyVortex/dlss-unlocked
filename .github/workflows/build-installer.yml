@@ -714,72 +714,10 @@ jobs:
         Write-Host "Is Prerelease: $isPrerelease"
         Write-Host "Make Latest: $makeLatest"
 
-    - name: Update version in Inno Setup script
+    - name: Configure OptiScaler.ini
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
-        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
-        $optiVersion = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
-        $buildType = "${{ matrix.build_type }}"
-        
-        $outputName = "dlss-unlocked-setup-$effectiveTag"
-        
-        $issFile = "DLSS unlocked.iss"
-        $content = Get-Content $issFile -Raw
-        
-        # Update version to use timestamp
-        $timestamp = Get-Date -Format "yyyyMMdd.HHmmss"
-        $dlssVersion = "1.0.$timestamp"
-        $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$dlssVersion`""
-        
-        # Update output filename
-        $content = $content -replace 'OutputBaseFilename=.*', "OutputBaseFilename=$outputName"
-        
-        # Remove icon reference if it exists
-        $content = $content -replace 'SetupIconFile=.*', '; SetupIconFile removed - no icon'
-        
-        # Save updated file
-        Set-Content -Path $issFile -Value $content -Encoding UTF8
-        
-        Write-Host "Updated Inno Setup script ($issFile)"
-        Write-Host "Output filename: $outputName.exe"
-        Write-Host "DLSS Unlocked version: $dlssVersion"
-
-    - name: Setup Inno Setup
-      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
-      uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
-      with:
-        path: "DLSS unlocked.iss"
-
-    - name: Create standalone manual package (dxgi.dll zip)
-      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
-      shell: powershell
-      run: |
-        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
-        
-        $manualZipDir = "$env:TEMP\manual_package"
-        if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
-        New-Item -ItemType Directory -Path $manualZipDir -Force
-        
-        $optiScalerSubDir = Join-Path $manualZipDir "OptiScaler"
-        New-Item -ItemType Directory -Path $optiScalerSubDir -Force
-        
-        # 1. Root files: dxgi.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
-        $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
-        if (-not $optiScalerDll) {
-            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-unlocked-upscaler.dll" -File | Select-Object -First 1
-        }
-        if (-not $optiScalerDll) {
-            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "version.dll" -File | Select-Object -First 1
-        }
-        if (-not $optiScalerDll) {
-            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-enabler.asi" -File | Select-Object -First 1
-        }
-        if ($optiScalerDll) {
-            Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\dxgi.dll" -Force
-        }
-        
-        # Copy OptiScaler_DLSSNR config and forwarder
         if (Test-Path "Dll version\OptiScaler.ini") {
             $optiIniContent = Get-Content "Dll version\OptiScaler.ini" -Raw
             # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
@@ -849,9 +787,79 @@ jobs:
             $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
             $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
 
-            Set-Content -Path "$manualZipDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
             Write-Host "Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)"
+        }
+
+    - name: Update version in Inno Setup script
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
+        $optiVersion = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
+        $buildType = "${{ matrix.build_type }}"
+        
+        $outputName = "dlss-unlocked-setup-$effectiveTag"
+        
+        $issFile = "DLSS unlocked.iss"
+        $content = Get-Content $issFile -Raw
+        
+        # Update version to use timestamp
+        $timestamp = Get-Date -Format "yyyyMMdd.HHmmss"
+        $dlssVersion = "1.0.$timestamp"
+        $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$dlssVersion`""
+        
+        # Update output filename
+        $content = $content -replace 'OutputBaseFilename=.*', "OutputBaseFilename=$outputName"
+        
+        # Remove icon reference if it exists
+        $content = $content -replace 'SetupIconFile=.*', '; SetupIconFile removed - no icon'
+        
+        # Save updated file
+        Set-Content -Path $issFile -Value $content -Encoding UTF8
+        
+        Write-Host "Updated Inno Setup script ($issFile)"
+        Write-Host "Output filename: $outputName.exe"
+        Write-Host "DLSS Unlocked version: $dlssVersion"
+
+    - name: Setup Inno Setup
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      uses: Minionguyjpro/Inno-Setup-Action@v1.2.7
+      with:
+        path: "DLSS unlocked.iss"
+
+    - name: Create standalone manual package (dxgi.dll zip)
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
+        
+        $manualZipDir = "$env:TEMP\manual_package"
+        if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
+        New-Item -ItemType Directory -Path $manualZipDir -Force
+        
+        $optiScalerSubDir = Join-Path $manualZipDir "OptiScaler"
+        New-Item -ItemType Directory -Path $optiScalerSubDir -Force
+        
+        # 1. Root files: dxgi.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
+        $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
+        if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-unlocked-upscaler.dll" -File | Select-Object -First 1
+        }
+        if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "version.dll" -File | Select-Object -First 1
+        }
+        if (-not $optiScalerDll) {
+            $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "dlss-enabler.asi" -File | Select-Object -First 1
+        }
+        if ($optiScalerDll) {
+            Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\dxgi.dll" -Force
+        }
+        
+        # Copy OptiScaler_DLSSNR config and forwarder
+        if (Test-Path "Dll version\OptiScaler.ini") {
+            Copy-Item -Path "Dll version\OptiScaler.ini" -Destination "$manualZipDir\OptiScaler.ini" -Force
+            Write-Host "Copied configured OptiScaler.ini to standalone archive root"
         }
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
