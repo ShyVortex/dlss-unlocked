@@ -50,6 +50,13 @@ under their respective permissive open-source licenses:
   Intel Simplified Software License (see Intel_XeSS_LICENSE.txt).
 - DLSSG-to-FSR3 components are distributed under their respective permissive terms
   (see DLSSG_to_FSR3_LICENSE.txt).
+- Proprietary NVIDIA DLSS & Display Driver Binaries: The author and maintainers
+  explicitly acknowledge that NVIDIA DLSS and associated display driver binaries
+  remain the proprietary intellectual property and copyrighted software of NVIDIA
+  Corporation. These components are provided strictly in good faith for non-commercial
+  community interoperability. Should NVIDIA Corporation or its authorized legal
+  representatives request the removal or takedown of any proprietary files, releases,
+  or this repository, the author will immediately and fully comply with their legal will.
 
 
 5. SAFETY NOTICE: SINGLE-PLAYER GAMES ONLY (ANTI-CHEAT WARNING)
