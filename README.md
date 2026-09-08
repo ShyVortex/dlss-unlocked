@@ -14,7 +14,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 > ### Acknowledgments
 > This project is only made possible thanks to the extraordinary dedication of talented open-source developers.
 >
-> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[cdozdil](https://github.com/cdozdil/OptiScaler)** for founding **OptiScaler**, **[wilsjo2](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** for the pre-SR multipass enhancements, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
+> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[cdozdil](https://github.com/cdozdil/OptiScaler)** for founding **OptiScaler**, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
 >
 > If you enjoy this project, please consider visiting their repositories, starring their work, and supporting their donation channels directly!
 
@@ -27,7 +27,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 - **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
 - **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to DLSS Frame Generation (with RTX 40 series GPU, only for the first generated frame) or AMD FidelityFX FSR 3.1 Frame Generation (RTX 20 and 30 series GPUs, all generated frames) via OptiScaler.
-- **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for wilsjo2's OptiScaler-DLSSNR-PreSR-Multipass backend, featuring pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
+- **Neural Rendering (DLSS-NR):** Full support for Dagherbou's OptiScaler_DLSSNR upscaling backend and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
 
@@ -60,7 +60,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 ## 🚀 Automated CI Builds
 
-This repository automatically tracks and synchronizes with upstream [OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass):
+This repository automatically tracks and synchronizes with upstream [OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR):
 1. Checks for new releases every 3 hours.
 2. Packages the latest upscaler binaries, neural rendering forwarders, and companion libraries.
 3. Automatically builds and publishes both `.exe` installer and `.zip` standalone manual packages on new releases.
@@ -72,7 +72,7 @@ This repository automatically tracks and synchronizes with upstream [OptiScaler-
 To build the standalone package or installer locally:
 
 ```powershell
-# 1. Download latest OptiScaler-DLSSNR-PreSR-Multipass and package standalone zip
+# 1. Download latest OptiScaler_DLSSNR and package standalone zip
 .\build-optiscaler.ps1 -DownloadLatest -CreateStandaloneZip
 
 # 2. Compile Inno Setup installer (requires Inno Setup 6.2+)
@@ -98,7 +98,6 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 
 ## 📜 Credits
 
-- **[OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** by wilsjo2
 - **[DLSS Enabler](https://github.com/artur-graniszewski/DLSS-Enabler)** by Artur Graniszewski
 - **[OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR)** by Dagherbou
 - **[OptiScaler](https://github.com/cdozdil/OptiScaler)** by cdozdil

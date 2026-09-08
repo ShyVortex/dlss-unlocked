@@ -1,9 +1,9 @@
-# DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script
-# This script downloads or extracts OptiScaler-DLSSNR-PreSR-Multipass releases and copies files to the build structure
+# DLSS-Unlocked OptiScaler_DLSSNR Build Script
+# This script downloads or extracts OptiScaler_DLSSNR releases and copies files to the build structure
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.6.2-swapchain-fixes",
+    [string]$OptiScalerVersion = "v0.2.0-dlssnr",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://files.catbox.moe/cw5hfd.zip",
@@ -14,10 +14,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script" -ForegroundColor Green
-Write-Host "==========================================================" -ForegroundColor Green
+Write-Host "DLSS-Unlocked OptiScaler_DLSSNR Build Script" -ForegroundColor Green
+Write-Host "===========================================" -ForegroundColor Green
 
-$Repo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass"
+$Repo = "Dagherbou/OptiScaler_DLSSNR"
 $TempDir = "temp_optiscaler"
 
 # Determine OptiScaler archive path or download
@@ -91,7 +91,7 @@ if (!(Test-Path $DllVersionDir)) {
     New-Item -ItemType Directory -Path $DllVersionDir | Out-Null
 }
 
-Write-Host "Copying OptiScaler-DLSSNR-PreSR-Multipass files to build structure..." -ForegroundColor Yellow
+Write-Host "Copying OptiScaler_DLSSNR files to build structure..." -ForegroundColor Yellow
 
 # Helper to find and copy file recursively
 function Copy-ExtractedFile {
@@ -180,7 +180,7 @@ if ($PatchedDlssnrUrl) {
 }
 
 Write-Host ""
-Write-Host "OptiScaler-DLSSNR-PreSR-Multipass and Streamline files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler_DLSSNR and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize

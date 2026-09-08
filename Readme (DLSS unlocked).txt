@@ -12,7 +12,7 @@ WHAT'S INCLUDED:
 
 2) Nukem9 DLSSG to FSR3 mod version 0.100
 
-3) OptiScaler-DLSSNR-PreSR-Multipass mod
+3) OptiScaler_DLSSNR mod
 
 4) (optional) NVIDIA Runtime Environment, version 1.0.0.0 (containing DXGI proxy and NVAPI64 proxy)
 
@@ -30,7 +30,7 @@ DLSS unlocked Installator depends on NVAPI dummy project by FakeMichau: https://
 
 DLSS unlocked Installator depends on DX12 proxy by Nitec: https://github.com/cdozdil/d3d12-proxy/releases/tag/v0.1
 
-DLSS unlocked DLSS upscaler emulation depends on OptiScaler-DLSSNR-PreSR-Multipass by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+DLSS unlocked DLSS upscaler emulation depends on OptiScaler_DLSSNR by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
 
 
 

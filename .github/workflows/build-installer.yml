@@ -43,7 +43,7 @@ permissions:
   actions: read
 
 env:
-  OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+  OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
   STREAMLINE_URL: "https://files.catbox.moe/cw5hfd.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
@@ -682,7 +682,7 @@ jobs:
         if ($customTag -and $customTag.Trim() -ne "") {
             $releaseTitle = "DLSS Unlocked ($displayType) - $effectiveTag"
         } else {
-            $releaseTitle = "DLSS Unlocked ($displayType) - OptiScaler DLSS-NR Pre-SR Multipass $optiVersion"
+            $releaseTitle = "DLSS Unlocked ($displayType) - OptiScaler_DLSSNR $optiVersion"
         }
         
         # Determine flags
@@ -896,17 +896,17 @@ jobs:
         tag_name: ${{ steps.release_meta.outputs.effective_tag }}
         name: ${{ steps.release_meta.outputs.release_title }}
         body: |
-          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
+          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
-          - **OptiScaler Backend**: OptiScaler-DLSSNR-PreSR-Multipass `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
+          - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **Patched NVIDIA Streamline 2.14**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`) with patched `nvngx_dlssnr.dll`
           - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
-          - **XeSS / XeLL Libraries**: Latest from OptiScaler package
-          - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler package
+          - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
+          - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
           - **DLSSG to FSR3 Module**: Nukem9's mod
           - **Registry Overrides**: Latest signature override scripts
           
@@ -926,7 +926,7 @@ jobs:
           - **Build Date**: ${{ steps.date.outputs.date }}
           - **Release Tag**: ${{ steps.release_meta.outputs.effective_tag }}
           - **Release Type**: ${{ steps.release_meta.outputs.display_type }}
-          - **OptiScaler Backend**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
+          - **OptiScaler_DLSSNR**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
           - **Package**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
           - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
           
@@ -934,13 +934,12 @@ jobs:
           - NVIDIA GeForce RTX 20xx / 30xx / 40xx
           
           ## 📜 Credits
-          - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler** by cdozdil: https://github.com/cdozdil/OptiScaler
           
           ---
-          Built with OptiScaler-DLSSNR-PreSR-Multipass `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
+          Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
         files: |
           Output/*.exe
           Output/*.zip
