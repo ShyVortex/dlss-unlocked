@@ -566,14 +566,13 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14-patched-dlssnr
+        key: streamline-2.14
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       shell: powershell
       run: |
         $streamlineUrl = "$env:STREAMLINE_URL"
-        $patchedDlssnrUrl = "$env:PATCHED_DLSSNR_URL"
         $streamlineDir = "Dll version\streamline"
         if (-not (Test-Path $streamlineDir)) { New-Item -ItemType Directory -Path $streamlineDir -Force | Out-Null }
         
@@ -613,10 +612,17 @@ jobs:
             Remove-Item $_.FullName -Force
         }
         
-        # Download and replace nvngx_dlssnr.dll with patched version
+        Write-Host "Streamline files in ${streamlineDir}:"
+        Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
+
+    - name: Download patched nvngx_dlssnr.dll
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        $patchedDlssnrUrl = "$env:PATCHED_DLSSNR_URL"
         if ($patchedDlssnrUrl) {
             Write-Host "Downloading patched nvngx_dlssnr.dll from: $patchedDlssnrUrl"
-            $targetDlssnrPath = Join-Path $streamlineDir "nvngx_dlssnr.dll"
+            $targetDlssnrPath = "Dll version\nvngx_dlssnr.dll"
             $dlssnrDownloaded = $false
             $dlssnrRetries = 3
             $retryCount = 0
@@ -625,7 +631,7 @@ jobs:
                 try {
                     Invoke-WebRequest -Uri $patchedDlssnrUrl -OutFile $targetDlssnrPath -UseBasicParsing -TimeoutSec 300
                     $dlssnrDownloaded = $true
-                    Write-Host "Patched nvngx_dlssnr.dll downloaded and replaced in $targetDlssnrPath"
+                    Write-Host "Patched nvngx_dlssnr.dll downloaded to $targetDlssnrPath"
                 } catch {
                     $retryCount++
                     Write-Warning "Patched nvngx_dlssnr.dll download attempt $retryCount failed: $($_.Exception.Message)"
@@ -637,9 +643,6 @@ jobs:
                 }
             }
         }
-        
-        Write-Host "Streamline files in ${streamlineDir}:"
-        Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
 
     - name: Prepare release metadata
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -804,6 +807,10 @@ jobs:
         if (Test-Path "Dll version\nvngx.dll_dlssnr.dll") {
             Copy-Item -Path "Dll version\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
         }
+        if (Test-Path "Dll version\nvngx_dlssnr.dll") {
+            Copy-Item -Path "Dll version\nvngx_dlssnr.dll" -Destination $manualZipDir -Force
+            Write-Host "Copied patched nvngx_dlssnr.dll to standalone archive root"
+        }
         
         # 2. OptiScaler subfolder files: DLSS Enabler headless, DLSSG mod, upscalers & companion DLLs
         if (Test-Path "Dll version\dlss-enabler.asi") {
@@ -900,10 +907,10 @@ jobs:
           
           ## 📦 What's Included
           - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14, and NVIDIA runtime components.
-          - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, and companion modules.
+          - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, and companion modules.
           - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-          - **Patched NVIDIA Streamline 2.14**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`) with patched `nvngx_dlssnr.dll`
-          - **Neural Rendering Forwarder**: Included (`nvngx.dll_dlssnr.dll`)
+          - **NVIDIA Streamline 2.14**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
+          - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
@@ -919,7 +926,7 @@ jobs:
           ### Option B: Manual Installation (Recommended for Linux / Proton)
           1. Download `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip`
           2. Extract contents directly into your game directory alongside the game `.exe`:
-             - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`
+             - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
           
           ## 📋 Release Information

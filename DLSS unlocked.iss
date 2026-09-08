@@ -84,6 +84,7 @@ Source: "Dll version\version.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unl
 
 Source: "Dll version\OptiScaler.ini"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\nvngx.dll_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvngx_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 
 ; 2. OptiScaler subdirectory files ({app}\OptiScaler): DLSS Enabler Headless (MFG), DLSSG mod, upscalers, companion DLLs
 Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}\OptiScaler"; DestName: "dlss-enabler-headless.dll"; Flags: confirmoverwrite; Components: core

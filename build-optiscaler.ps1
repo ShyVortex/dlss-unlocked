@@ -167,13 +167,13 @@ Get-ChildItem -Path $StreamlineDir -Filter "sl.nvperf.dll" -Recurse -File | ForE
     Remove-Item $_.FullName -Force
 }
 
-# Download and replace nvngx_dlssnr.dll with patched version
+# Download patched nvngx_dlssnr.dll to root build directory
 if ($PatchedDlssnrUrl) {
     Write-Host "Downloading patched nvngx_dlssnr.dll from $PatchedDlssnrUrl..." -ForegroundColor Yellow
-    $targetDlssnrPath = Join-Path $StreamlineDir "nvngx_dlssnr.dll"
+    $targetDlssnrPath = Join-Path $DllVersionDir "nvngx_dlssnr.dll"
     try {
         Invoke-WebRequest -Uri $PatchedDlssnrUrl -OutFile $targetDlssnrPath -UseBasicParsing -TimeoutSec 300
-        Write-Host "Patched nvngx_dlssnr.dll downloaded and replaced at $targetDlssnrPath" -ForegroundColor Green
+        Write-Host "Patched nvngx_dlssnr.dll downloaded to $targetDlssnrPath" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download patched nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
     }
@@ -241,6 +241,9 @@ if ($CreateStandaloneZip) {
     }
     if (Test-Path "$DllVersionDir\nvngx.dll_dlssnr.dll") {
         Copy-Item -Path "$DllVersionDir\nvngx.dll_dlssnr.dll" -Destination $manualZipDir -Force
+    }
+    if (Test-Path "$DllVersionDir\nvngx_dlssnr.dll") {
+        Copy-Item -Path "$DllVersionDir\nvngx_dlssnr.dll" -Destination $manualZipDir -Force
     }
 
     # 2. OptiScaler subfolder files: DLSS Enabler headless, DLSSG mod, upscalers & companion DLLs
