@@ -6,7 +6,7 @@ param(
     [string]$OptiScalerVersion = "v0.6.2-swapchain-fixes",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
-    [string]$StreamlineUrl = "https://files.catbox.moe/3ypg5u.zip",
+    [string]$StreamlineUrl = "https://files.catbox.moe/ta7sxc.zip",
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false

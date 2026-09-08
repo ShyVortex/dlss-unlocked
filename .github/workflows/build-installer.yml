@@ -44,7 +44,7 @@ permissions:
 
 env:
   OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
-  STREAMLINE_URL: "https://cdn.discordapp.com/attachments/1545049227321810974/1545050050609025114/DLSS310.8.0-Streamline2.13.zip?ex=6a9f58bd&is=6a9e073d&hm=d421fc9c1b47dd2c9d7baadaedbbc837077508701650c943c5f1a25cb06611ee&"
+  STREAMLINE_URL: "https://files.catbox.moe/ta7sxc.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
