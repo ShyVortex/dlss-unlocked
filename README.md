@@ -14,7 +14,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 > ### Acknowledgments
 > This project is only made possible thanks to the extraordinary dedication of talented open-source developers.
 >
-> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[cdozdil](https://github.com/cdozdil/OptiScaler)** for founding **OptiScaler**, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
+> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[OptiScaler](https://github.com/optiscaler/OptiScaler)**, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
 >
 > If you enjoy this project, please consider visiting their repositories, starring their work, and supporting their donation channels directly!
 
@@ -102,7 +102,7 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 
 - **[DLSS Enabler](https://github.com/artur-graniszewski/DLSS-Enabler)** by Artur Graniszewski
 - **[OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR)** by Dagherbou
-- **[OptiScaler](https://github.com/cdozdil/OptiScaler)** by cdozdil
+- **[OptiScaler](https://github.com/optiscaler/OptiScaler)**
 - **[DLSSG to FSR3](https://github.com/Nukem9/dlssg-to-fsr3)** by Nukem9
 - **[DLSSSpoofer](https://github.com/nitrog0d/DLSSSpoofer)** by NitroG0d
 - **[nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy)** by FakeMichau

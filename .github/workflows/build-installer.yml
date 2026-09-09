@@ -1144,7 +1144,7 @@ jobs:
           ## 📜 Credits
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
-          - **OptiScaler** by cdozdil: https://github.com/cdozdil/OptiScaler
+          - **OptiScaler**: https://github.com/optiscaler/OptiScaler
           
           ---
           Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
