@@ -197,25 +197,33 @@ if (Test-Path $tempStreamlineExtractDir) {
 
 # Download missing original nvngx_dlssnr.dll for OptiScaler/streamline
 if ($OriginalDlssnrUrl) {
-    Write-Host "Downloading original nvngx_dlssnr.dll for Streamline from $OriginalDlssnrUrl..." -ForegroundColor Yellow
     $targetOrigDlssnr = Join-Path $StreamlineDir "nvngx_dlssnr.dll"
-    try {
-        Invoke-WebRequest -Uri $OriginalDlssnrUrl -OutFile $targetOrigDlssnr -UseBasicParsing -TimeoutSec 300
-        Write-Host "Original nvngx_dlssnr.dll downloaded to $targetOrigDlssnr" -ForegroundColor Green
-    } catch {
-        Write-Host "Warning: Could not download original nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+    if (-not (Test-Path $targetOrigDlssnr)) {
+        Write-Host "Downloading original nvngx_dlssnr.dll for Streamline from $OriginalDlssnrUrl..." -ForegroundColor Yellow
+        try {
+            Invoke-WebRequest -Uri $OriginalDlssnrUrl -OutFile $targetOrigDlssnr -UseBasicParsing -TimeoutSec 300
+            Write-Host "Original nvngx_dlssnr.dll downloaded to $targetOrigDlssnr" -ForegroundColor Green
+        } catch {
+            Write-Host "Warning: Could not download original nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "Original nvngx_dlssnr.dll already present in Streamline folder." -ForegroundColor Gray
     }
 }
 
 # Download missing sl.dlss_nr.dll for OptiScaler/streamline
 if ($StreamlineDlssNrUrl) {
-    Write-Host "Downloading sl.dlss_nr.dll for Streamline from $StreamlineDlssNrUrl..." -ForegroundColor Yellow
     $targetSlDlssNr = Join-Path $StreamlineDir "sl.dlss_nr.dll"
-    try {
-        Invoke-WebRequest -Uri $StreamlineDlssNrUrl -OutFile $targetSlDlssNr -UseBasicParsing -TimeoutSec 300
-        Write-Host "sl.dlss_nr.dll downloaded to $targetSlDlssNr" -ForegroundColor Green
-    } catch {
-        Write-Host "Warning: Could not download sl.dlss_nr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+    if (-not (Test-Path $targetSlDlssNr)) {
+        Write-Host "Downloading sl.dlss_nr.dll for Streamline from $StreamlineDlssNrUrl..." -ForegroundColor Yellow
+        try {
+            Invoke-WebRequest -Uri $StreamlineDlssNrUrl -OutFile $targetSlDlssNr -UseBasicParsing -TimeoutSec 300
+            Write-Host "sl.dlss_nr.dll downloaded to $targetSlDlssNr" -ForegroundColor Green
+        } catch {
+            Write-Host "Warning: Could not download sl.dlss_nr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "sl.dlss_nr.dll already present in Streamline folder." -ForegroundColor Gray
     }
 }
 
