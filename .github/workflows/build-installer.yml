@@ -712,7 +712,7 @@ jobs:
             }
         }
         if ($missingFiles.Count -gt 0) {
-            Write-Error "Streamline preparation failed! Missing required files in $streamlineDir: $($missingFiles -join ', ')"
+            Write-Error "Streamline preparation failed! Missing required files in ${streamlineDir}: $($missingFiles -join ', ')"
             exit 1
         }
         
