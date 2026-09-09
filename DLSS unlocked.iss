@@ -114,7 +114,6 @@ Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excl
 ; 4. Licenses ({app}\Licenses)
 Source: "Licenses\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "DLLSG mod\READ ME.txt"; DestDir: "{app}\Licenses"; DestName: "READ ME (DLSSG to FSR3 mod).txt"; Flags: ignoreversion; Components: core
-Source: "DLLSG mod\LICENSE.txt"; DestDir: "{app}\Licenses"; DestName: "LICENSE (DLSSG to FSR3 mod).txt"; Flags: ignoreversion; Components: core
 Source: "Dll version\XeSS_LICENSE.txt"; DestDir: "{app}\Licenses"; DestName: "XESS LICENSE.txt"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\FidelityFX_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
