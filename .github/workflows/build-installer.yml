@@ -8,6 +8,13 @@ on:
   # Allow manual trigger
   workflow_dispatch:
     inputs:
+      build_action:
+        description: 'Action to perform: "release" to build and publish GitHub release, or "verify" to test the build without releasing'
+        type: choice
+        options:
+          - 'release'
+          - 'verify'
+        default: 'release'
       optiscaler_version:
         description: 'Specific OptiScaler_DLSSNR version to use (e.g., v0.2.0-dlssnr, nightly, latest, or leave empty for auto-detect both)'
         required: false
@@ -30,13 +37,13 @@ on:
         required: false
         default: false
 
-  # Trigger on push to main branch for testing
-  push:
-    branches: [ main, master ]
-    paths-ignore:
-      - '**.md'
-      - '.github/**'
-      - 'docs/**'
+  # Trigger on push to main branch (disabled for now)
+  # push:
+  #   branches: [ main, master ]
+  #   paths-ignore:
+  #     - '**.md'
+  #     - '.github/**'
+  #     - 'docs/**'
 
 permissions:
   contents: write
@@ -44,8 +51,10 @@ permissions:
 
 env:
   OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
-  STREAMLINE_URL: "https://files.catbox.moe/cw5hfd.zip"
-  PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"
+  STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip"
+  PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
+  ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
+  STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
@@ -62,6 +71,7 @@ jobs:
       latest_filename: ${{ steps.version_check.outputs.latest_filename }}
       custom_tag: ${{ steps.version_check.outputs.custom_tag }}
       custom_release_type: ${{ steps.version_check.outputs.custom_release_type }}
+      should_release: ${{ steps.version_check.outputs.should_release }}
     
     steps:
     - name: Checkout repository
@@ -146,6 +156,8 @@ jobs:
         }
 
         # Fetch release information
+        $buildAction = "${{ github.event.inputs.build_action }}"
+        if (-not $buildAction) { $buildAction = "release" }
         $specificVersion = "${{ github.event.inputs.optiscaler_version }}"
         $customTag = "${{ github.event.inputs.tag_name }}"
         $customReleaseType = "${{ github.event.inputs.release_type }}"
@@ -153,7 +165,14 @@ jobs:
         $isManualRun = "${{ github.event_name }}" -eq "workflow_dispatch"
         $isPushRun = "${{ github.event_name }}" -eq "push"
         $isScheduledRun = "${{ github.event_name }}" -eq "schedule"
-        $forceBuild = $isPushRun -or ("${{ github.event.inputs.force_build }}" -eq "true")
+        $forceBuild = $isPushRun -or ("${{ github.event.inputs.force_build }}" -eq "true") -or ($isManualRun -and $buildAction -eq "verify")
+        
+        $shouldRelease = $true
+        if ($isPushRun) {
+            $shouldRelease = $false
+        } elseif ($isManualRun -and $buildAction -eq "verify") {
+            $shouldRelease = $false
+        }
         
         $shouldBuildNightly = $false
         $shouldBuildLatest = $false
@@ -168,6 +187,8 @@ jobs:
         Write-Host "Manual run: $isManualRun"
         Write-Host "Push run: $isPushRun"
         Write-Host "Scheduled run: $isScheduledRun"
+        Write-Host "Build action: $buildAction"
+        Write-Host "Should create GitHub release: $shouldRelease"
         Write-Host "Specific version requested: $specificVersion"
         Write-Host "Custom tag: $customTag"
         Write-Host "Release type: $customReleaseType"
@@ -330,10 +351,12 @@ jobs:
         echo "latest_filename=$latestFilename" >> $env:GITHUB_OUTPUT
         echo "custom_tag=$customTag" >> $env:GITHUB_OUTPUT
         echo "custom_release_type=$customReleaseType" >> $env:GITHUB_OUTPUT
+        echo "should_release=$($shouldRelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
         Write-Host "=== Summary ==="
         Write-Host "Should build nightly: $shouldBuildNightly ($nightlyVersion - URL: $nightlyDownloadUrl)"
         Write-Host "Should build latest: $shouldBuildLatest ($latestVersion - URL: $latestDownloadUrl)"
+        Write-Host "Should create GitHub release: $shouldRelease (Build action: $buildAction)"
         if ($customTag) { Write-Host "Custom release tag: $customTag" }
         Write-Host "Release type setting: $customReleaseType"
       env:
@@ -566,7 +589,7 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14
+        key: streamline-2.14.1-v1
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -578,6 +601,9 @@ jobs:
         
         Write-Host "Downloading NVIDIA Streamline from: $streamlineUrl"
         $tempZip = "$env:TEMP\streamline.zip"
+        $tempExtract = "$env:TEMP\streamline_extracted"
+        if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force }
+        New-Item -ItemType Directory -Path $tempExtract -Force | Out-Null
         
         $maxRetries = 3
         $retryCount = 0
@@ -600,16 +626,80 @@ jobs:
         }
         
         if (Test-Path $tempZip) {
-            Write-Host "Extracting Streamline zip to $streamlineDir..."
-            Expand-Archive -Path $tempZip -DestinationPath $streamlineDir -Force
+            Write-Host "Extracting Streamline zip to $tempExtract..."
+            Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
             Remove-Item -Path $tempZip -Force
-            Write-Host "Streamline files extracted."
+            Write-Host "Streamline archive extracted."
+            
+            $binX64Dir = Join-Path $tempExtract "bin\x64"
+            if (-not (Test-Path $binX64Dir)) {
+                $foundX64 = Get-ChildItem -Path $tempExtract -Recurse -Directory -Filter "x64" | Where-Object { $_.FullName -like "*bin*x64*" } | Select-Object -First 1
+                if ($foundX64) { $binX64Dir = $foundX64.FullName } else { $binX64Dir = $tempExtract }
+            }
+
+            $excludedStreamlineFiles = @(
+                "sl.nvperf.dll",
+                "NvLowLatencyVk.dll",
+                "nvngx_deepdvc.dll",
+                "sl.deepdvc.dll",
+                "sl.directsr.dll",
+                "sl.nis.dll",
+                "nis.license.txt"
+            )
+
+            # Copy files directly from bin/x64 into $streamlineDir (excluding development folder and unwanted DLLs)
+            Get-ChildItem -Path $binX64Dir -File | Where-Object {
+                $excludedStreamlineFiles -notcontains $_.Name
+            } | ForEach-Object {
+                Copy-Item -Path $_.FullName -Destination $streamlineDir -Force
+                Write-Host "  Streamline file: $($_.Name)"
+            }
+
+            Remove-Item -Path $tempExtract -Recurse -Force
         }
 
-        # Exclude sl.nvperf.dll if present in source Streamline archive
-        Get-ChildItem -Path $streamlineDir -Filter "sl.nvperf.dll" -Recurse -File | ForEach-Object {
-            Write-Host "Excluding $($_.FullName) from Streamline distribution..."
-            Remove-Item $_.FullName -Force
+        # Download original nvngx_dlssnr.dll for Streamline folder
+        $origDlssnrUrl = "$env:ORIGINAL_STREAMLINE_DLSSNR_URL"
+        if ($origDlssnrUrl) {
+            Write-Host "Downloading original nvngx_dlssnr.dll for Streamline from: $origDlssnrUrl"
+            $targetOrigDlssnr = Join-Path $streamlineDir "nvngx_dlssnr.dll"
+            $maxRetries = 3
+            $retryCount = 0
+            $downloaded = $false
+            while (-not $downloaded -and $retryCount -lt $maxRetries) {
+                try {
+                    Invoke-WebRequest -Uri $origDlssnrUrl -OutFile $targetOrigDlssnr -UseBasicParsing -TimeoutSec 300
+                    $downloaded = $true
+                    Write-Host "Original nvngx_dlssnr.dll downloaded successfully"
+                } catch {
+                    $retryCount++
+                    Write-Warning "Attempt $retryCount failed: $($_.Exception.Message)"
+                    if ($retryCount -ge $maxRetries) { break }
+                    Start-Sleep -Seconds (5 * $retryCount)
+                }
+            }
+        }
+
+        # Download sl.dlss_nr.dll for Streamline folder
+        $slDlssNrUrl = "$env:STREAMLINE_DLSS_NR_URL"
+        if ($slDlssNrUrl) {
+            Write-Host "Downloading sl.dlss_nr.dll for Streamline from: $slDlssNrUrl"
+            $targetSlDlssNr = Join-Path $streamlineDir "sl.dlss_nr.dll"
+            $maxRetries = 3
+            $retryCount = 0
+            $downloaded = $false
+            while (-not $downloaded -and $retryCount -lt $maxRetries) {
+                try {
+                    Invoke-WebRequest -Uri $slDlssNrUrl -OutFile $targetSlDlssNr -UseBasicParsing -TimeoutSec 300
+                    $downloaded = $true
+                    Write-Host "sl.dlss_nr.dll downloaded successfully"
+                } catch {
+                    $retryCount++
+                    Write-Warning "Attempt $retryCount failed: $($_.Exception.Message)"
+                    if ($retryCount -ge $maxRetries) { break }
+                    Start-Sleep -Seconds (5 * $retryCount)
+                }
+            }
         }
         
         Write-Host "Streamline files in ${streamlineDir}:"
@@ -963,6 +1053,38 @@ jobs:
       id: date
       run: echo "date=$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')" >> $env:GITHUB_OUTPUT
 
+    - name: Verify build artifacts
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        Write-Host "=== Verifying Generated Artifacts (${{ matrix.build_type }}) ==="
+        $exeFiles = Get-ChildItem -Path "Output" -Filter "*.exe" -File
+        $zipFiles = Get-ChildItem -Path "Output" -Filter "*.zip" -File
+        
+        $hasError = $false
+        if ($exeFiles.Count -eq 0) {
+            Write-Error "Verification failed: No setup .exe produced in Output/"
+            $hasError = $true
+        } else {
+            foreach ($f in $exeFiles) {
+                Write-Host "[OK] Setup executable: $($f.Name) ($([math]::Round($f.Length / 1MB, 2)) MB)"
+            }
+        }
+        
+        if ($zipFiles.Count -eq 0) {
+            Write-Error "Verification failed: No standalone .zip produced in Output/"
+            $hasError = $true
+        } else {
+            foreach ($f in $zipFiles) {
+                Write-Host "[OK] Standalone archive: $($f.Name) ($([math]::Round($f.Length / 1MB, 2)) MB)"
+            }
+        }
+        
+        if ($hasError) {
+            exit 1
+        }
+        Write-Host "Artifact verification succeeded for ${{ matrix.build_type }}!" -ForegroundColor Green
+
     - name: Upload build artifacts
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: actions/upload-artifact@v4
@@ -974,7 +1096,7 @@ jobs:
         retention-days: 30
 
     - name: Create release
-      if: github.event_name != 'push' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      if: needs.check-versions.outputs.should_release == 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       uses: softprops/action-gh-release@v2
       with:
         tag_name: ${{ steps.release_meta.outputs.effective_tag }}
@@ -983,10 +1105,10 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, and companion modules.
           - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-          - **NVIDIA Streamline 2.14**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
+          - **NVIDIA Streamline 2.14.1**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
@@ -1005,7 +1127,7 @@ jobs:
           2. Extract contents directly into your game directory alongside the game `.exe`:
              - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
-             - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14 runtime files
+             - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
              - **`Licenses/` folder:** official licenses and legal disclaimer
           
           ## 📋 Release Information

@@ -48,7 +48,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
-   - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14 runtime files
+   - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
    - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, third-party libraries, and legal disclaimers
 3. **(Linux)** Launch a game with the following options: `WINEDLLOVERRIDES="dxgi=n,b" %command%`.
 

@@ -6,8 +6,10 @@ param(
     [string]$OptiScalerVersion = "v0.2.0-dlssnr",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
-    [string]$StreamlineUrl = "https://files.catbox.moe/cw5hfd.zip",
+    [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip",
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
+    [string]$OriginalDlssnrUrl = "https://files.catbox.moe/05wm7b.dll",
+    [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -144,27 +146,77 @@ if (!(Test-Path $StreamlineDir)) {
     New-Item -ItemType Directory -Path $StreamlineDir | Out-Null
 }
 
+$tempStreamlineExtractDir = Join-Path $TempDir "streamline_extracted"
+if (Test-Path $tempStreamlineExtractDir) { Remove-Item -Path $tempStreamlineExtractDir -Recurse -Force }
+New-Item -ItemType Directory -Path $tempStreamlineExtractDir | Out-Null
+
 if ($StreamlinePath -and (Test-Path $StreamlinePath)) {
     Write-Host "Extracting local NVIDIA Streamline package ($StreamlinePath)..." -ForegroundColor Yellow
-    Expand-Archive -Path $StreamlinePath -DestinationPath $StreamlineDir -Force
-    Write-Host "Streamline files extracted to $StreamlineDir" -ForegroundColor Green
+    Expand-Archive -Path $StreamlinePath -DestinationPath $tempStreamlineExtractDir -Force
 } elseif ($StreamlineUrl) {
     $tempStreamlineZip = Join-Path $TempDir "streamline.zip"
     Write-Host "Downloading NVIDIA Streamline package from $StreamlineUrl..." -ForegroundColor Yellow
     try {
         Invoke-WebRequest -Uri $StreamlineUrl -OutFile $tempStreamlineZip -UseBasicParsing -TimeoutSec 300
-        Expand-Archive -Path $tempStreamlineZip -DestinationPath $StreamlineDir -Force
+        Expand-Archive -Path $tempStreamlineZip -DestinationPath $tempStreamlineExtractDir -Force
         Remove-Item -Path $tempStreamlineZip -Force
-        Write-Host "NVIDIA Streamline files downloaded and extracted to $StreamlineDir" -ForegroundColor Green
+        Write-Host "NVIDIA Streamline archive downloaded and extracted." -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download Streamline files: $($_.Exception.Message)" -ForegroundColor Yellow
     }
 }
 
-# Exclude sl.nvperf.dll if present in source Streamline archive
-Get-ChildItem -Path $StreamlineDir -Filter "sl.nvperf.dll" -Recurse -File | ForEach-Object {
-    Write-Host "Excluding $($_.FullName) from Streamline files..." -ForegroundColor Yellow
-    Remove-Item $_.FullName -Force
+if (Test-Path $tempStreamlineExtractDir) {
+    # Locate bin/x64 directory in extracted archive
+    $binX64Dir = Join-Path $tempStreamlineExtractDir "bin\x64"
+    if (-not (Test-Path $binX64Dir)) {
+        $foundX64 = Get-ChildItem -Path $tempStreamlineExtractDir -Recurse -Directory -Filter "x64" | Where-Object { $_.FullName -like "*bin*x64*" } | Select-Object -First 1
+        if ($foundX64) { $binX64Dir = $foundX64.FullName } else { $binX64Dir = $tempStreamlineExtractDir }
+    }
+
+    $excludedStreamlineFiles = @(
+        "sl.nvperf.dll",
+        "NvLowLatencyVk.dll",
+        "nvngx_deepdvc.dll",
+        "sl.deepdvc.dll",
+        "sl.directsr.dll",
+        "sl.nis.dll",
+        "nis.license.txt"
+    )
+
+    # Copy files directly from bin/x64 into $StreamlineDir (excluding development folder and unwanted DLLs)
+    Get-ChildItem -Path $binX64Dir -File | Where-Object {
+        $excludedStreamlineFiles -notcontains $_.Name
+    } | ForEach-Object {
+        Copy-Item -Path $_.FullName -Destination $StreamlineDir -Force
+        Write-Host "  Streamline file: $($_.Name)" -ForegroundColor Gray
+    }
+
+    Remove-Item -Path $tempStreamlineExtractDir -Recurse -Force
+}
+
+# Download missing original nvngx_dlssnr.dll for OptiScaler/streamline
+if ($OriginalDlssnrUrl) {
+    Write-Host "Downloading original nvngx_dlssnr.dll for Streamline from $OriginalDlssnrUrl..." -ForegroundColor Yellow
+    $targetOrigDlssnr = Join-Path $StreamlineDir "nvngx_dlssnr.dll"
+    try {
+        Invoke-WebRequest -Uri $OriginalDlssnrUrl -OutFile $targetOrigDlssnr -UseBasicParsing -TimeoutSec 300
+        Write-Host "Original nvngx_dlssnr.dll downloaded to $targetOrigDlssnr" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download original nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+}
+
+# Download missing sl.dlss_nr.dll for OptiScaler/streamline
+if ($StreamlineDlssNrUrl) {
+    Write-Host "Downloading sl.dlss_nr.dll for Streamline from $StreamlineDlssNrUrl..." -ForegroundColor Yellow
+    $targetSlDlssNr = Join-Path $StreamlineDir "sl.dlss_nr.dll"
+    try {
+        Invoke-WebRequest -Uri $StreamlineDlssNrUrl -OutFile $targetSlDlssNr -UseBasicParsing -TimeoutSec 300
+        Write-Host "sl.dlss_nr.dll downloaded to $targetSlDlssNr" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download sl.dlss_nr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
 }
 
 # Download patched nvngx_dlssnr.dll to root build directory
