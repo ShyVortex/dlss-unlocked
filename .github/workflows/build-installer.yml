@@ -1193,12 +1193,14 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
-          - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, and companion modules.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
+          - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, `OptiScaler/dlssg_sm86/` native MFG unlocker, and companion modules.
+          - **Native DLSS MFG Default**: Out of the box, native hardware-accelerated DLSS Frame Generation is enabled by default for GeForce RTX 20 and 30 series GPUs (`External=true`, `AmpereMfgUnlock=true`). RTX 40 series (Ada Lovelace) users can switch to the Ada MFG unlocker (`AdaMfgUnlock`) via the in-game overlay or `OptiScaler.ini`.
           - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **NVIDIA Streamline 2.14.1**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
-          - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
+          - **Native Turing/Ampere MFG Unlocker**: Bundled `dlssg_sm86` module (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`) in `OptiScaler/dlssg_sm86/`
+          - **DLSS Enabler Headless**: Multi-Frame Generation companion module (`dlss-enabler-headless.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler package
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler package
           - **DLSSG to FSR3 Module**: Nukem9's mod
@@ -1215,8 +1217,13 @@ jobs:
           2. Extract contents directly into your game directory alongside the game `.exe`:
              - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
+             - **`OptiScaler/dlssg_sm86/` folder:** native Turing/Ampere MFG unlocker files
              - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
              - **`Licenses/` folder:** official licenses and legal disclaimer
+          3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
+             ```bash
+             WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
+             ```
           
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
@@ -1227,10 +1234,12 @@ jobs:
           - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
           
           ## 🎮 Supported GPUs
-          - NVIDIA GeForce RTX 20xx / 30xx / 40xx
+          - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere)**: Enabled by default with hardware-accelerated native DLSS MFG (`dlssg_sm86`).
+          - **NVIDIA GeForce RTX 40xx (Ada Lovelace)**: Fully supported; switch to Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via in-game overlay or `OptiScaler.ini`.
           
           ## 📜 Credits
           - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+          - **dlssg_for_sm86** by sdli1995: https://github.com/sdli1995/dlssg_for_sm86
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler**: https://github.com/optiscaler/OptiScaler

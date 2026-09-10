@@ -51,7 +51,10 @@ Get the latest release from the **[Releases](../../releases)** page.
    - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`)
    - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
    - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, third-party libraries, and legal disclaimers
-3. **(Linux)** Launch a game with the following options: `WINEDLLOVERRIDES="dxgi=n,b" %command%`.
+3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
+   ```bash
+   WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
+   ```
 
 ---
 
