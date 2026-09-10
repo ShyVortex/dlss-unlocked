@@ -320,69 +320,13 @@ Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
-# Configure OptiScaler.ini (FrameGen)
+# Configure OptiScaler.ini (safe in-place replacement of default variables)
 if (Test-Path "$DllVersionDir\OptiScaler.ini") {
     $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
-    # Helper to safely update a key within a specific INI section
-    function Set-IniKey {
-        param(
-            [string]$Content,
-            [string]$Section,
-            [string]$Key,
-            [string]$Value
-        )
-        $lines = $Content -split "\r?\n"
-        $newLines = [System.Collections.Generic.List[string]]::new()
-        $currentSection = ""
-        $keyFound = $false
-        $sectionFound = $false
-
-        foreach ($line in $lines) {
-            $trimmed = $line.Trim()
-            if ($trimmed -match '^\[([^\]]+)\]$') {
-                if ($currentSection -eq $Section -and -not $keyFound) {
-                    $newLines.Add("$Key=$Value")
-                    $keyFound = $true
-                }
-                $currentSection = $matches[1].Trim()
-                if ($currentSection -eq $Section) {
-                    $sectionFound = $true
-                }
-                $newLines.Add($line)
-                continue
-            }
-
-            if ($currentSection -eq $Section -and $trimmed -match "^$([regex]::Escape($Key))\s*=") {
-                $newLines.Add("$Key=$Value")
-                $keyFound = $true
-                continue
-            }
-
-            $newLines.Add($line)
-        }
-
-        if ($currentSection -eq $Section -and -not $keyFound) {
-            $newLines.Add("$Key=$Value")
-            $keyFound = $true
-        }
-
-        if (-not $sectionFound) {
-            if ($newLines.Count -gt 0 -and $newLines[$newLines.Count - 1] -ne "") {
-                $newLines.Add("")
-            }
-            $newLines.Add("[$Section]")
-            $newLines.Add("$Key=$Value")
-        }
-
-        return ($newLines -join "`r`n")
-    }
-
-    # Configure [FrameGen]
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "External" -Value "true"
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "AmpereMfgUnlock" -Value "true"
-
+    $optiIniContent = $optiIniContent -replace '(?m)^(\s*External\s*=\s*).*$', '${1}true'
+    $optiIniContent = $optiIniContent -replace '(?m)^(\s*AmpereMfgUnlock\s*=\s*).*$', '${1}true'
     Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-    Write-Host "Configured OptiScaler.ini (FrameGen.External=true, FrameGen.AmpereMfgUnlock=true)" -ForegroundColor Gray
+    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true)" -ForegroundColor Gray
 }
 
 if ($CreateStandaloneZip) {

@@ -132,15 +132,34 @@ Type: dirifempty; Name: "{app}\OptiScaler\D3D12_OptiScaler"
 
 [Icons]
 
-[INI]
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "External"; String: "true"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "AmpereMfgUnlock"; String: "true"; Components: core
-
 [Run]
 Filename: "{app}\Licenses\DISCLAIMER.txt"; Description: "View the DLSS Unlocked Disclaimer and Licenses"; Flags: postinstall shellexec skipifsilent unchecked
 Filename: "{app}\OptiScaler.ini"; Description: "Edit the configuration file (optional)"; Flags: postinstall shellexec skipifsilent unchecked
 
 [Code]
+procedure SafeReplaceIniLine(const FilePath, KeyPrefix, NewKeyValue: String);
+var
+  Lines: TArrayOfString;
+  I: Integer;
+  Modified: Boolean;
+  LineTrim: String;
+begin
+  if not FileExists(FilePath) then Exit;
+  if not LoadStringsFromFile(FilePath, Lines) then Exit;
+  Modified := False;
+  for I := 0 to GetArrayLength(Lines) - 1 do
+  begin
+    LineTrim := Trim(Lines[I]);
+    if Pos(KeyPrefix, LineTrim) = 1 then
+    begin
+      Lines[I] := NewKeyValue;
+      Modified := True;
+    end;
+  end;
+  if Modified then
+    SaveStringsToFile(FilePath, Lines, False);
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 var
   IniPath: String;
@@ -148,10 +167,7 @@ begin
   if CurStep = ssPostInstall then
   begin
     IniPath := ExpandConstant('{app}\OptiScaler.ini');
-    if FileExists(IniPath) then
-    begin
-      SetIniString('FrameGen', 'External', 'true', IniPath);
-      SetIniString('FrameGen', 'AmpereMfgUnlock', 'true', IniPath);
-    end;
+    SafeReplaceIniLine(IniPath, 'External=', 'External=true');
+    SafeReplaceIniLine(IniPath, 'AmpereMfgUnlock=', 'AmpereMfgUnlock=true');
   end;
 end;

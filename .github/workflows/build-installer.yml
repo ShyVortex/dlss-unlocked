@@ -885,66 +885,10 @@ jobs:
       run: |
         if (Test-Path "Dll version\OptiScaler.ini") {
             $optiIniContent = Get-Content "Dll version\OptiScaler.ini" -Raw
-            # Helper to safely update a key within a specific INI section
-            function Set-IniKey {
-                param(
-                    [string]$Content,
-                    [string]$Section,
-                    [string]$Key,
-                    [string]$Value
-                )
-                $lines = $Content -split "\r?\n"
-                $newLines = [System.Collections.Generic.List[string]]::new()
-                $currentSection = ""
-                $keyFound = $false
-                $sectionFound = $false
-
-                foreach ($line in $lines) {
-                    $trimmed = $line.Trim()
-                    if ($trimmed -match '^\[([^\]]+)\]$') {
-                        if ($currentSection -eq $Section -and -not $keyFound) {
-                            $newLines.Add("$Key=$Value")
-                            $keyFound = $true
-                        }
-                        $currentSection = $matches[1].Trim()
-                        if ($currentSection -eq $Section) {
-                            $sectionFound = $true
-                        }
-                        $newLines.Add($line)
-                        continue
-                    }
-
-                    if ($currentSection -eq $Section -and $trimmed -match "^$([regex]::Escape($Key))\s*=") {
-                        $newLines.Add("$Key=$Value")
-                        $keyFound = $true
-                        continue
-                    }
-
-                    $newLines.Add($line)
-                }
-
-                if ($currentSection -eq $Section -and -not $keyFound) {
-                    $newLines.Add("$Key=$Value")
-                    $keyFound = $true
-                }
-
-                if (-not $sectionFound) {
-                    if ($newLines.Count -gt 0 -and $newLines[$newLines.Count - 1] -ne "") {
-                        $newLines.Add("")
-                    }
-                    $newLines.Add("[$Section]")
-                    $newLines.Add("$Key=$Value")
-                }
-
-                return ($newLines -join "`r`n")
-            }
-
-            # Configure [FrameGen]
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "External" -Value "true"
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "AmpereMfgUnlock" -Value "true"
-
+            $optiIniContent = $optiIniContent -replace '(?m)^(\s*External\s*=\s*).*$', '${1}true'
+            $optiIniContent = $optiIniContent -replace '(?m)^(\s*AmpereMfgUnlock\s*=\s*).*$', '${1}true'
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (FrameGen.External=true, FrameGen.AmpereMfgUnlock=true)"
+            Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true)"
         }
 
     - name: Update version in Inno Setup script
