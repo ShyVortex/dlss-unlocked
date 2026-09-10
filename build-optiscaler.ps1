@@ -320,11 +320,19 @@ Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
-# Configure OptiScaler.ini (safe in-place replacement of default variables)
+# Configure OptiScaler.ini (safe regex substitution matching commit e71ba60)
 if (Test-Path "$DllVersionDir\OptiScaler.ini") {
     $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
-    $optiIniContent = $optiIniContent -replace '(?m)^(\s*External\s*=\s*).*$', '${1}true'
-    $optiIniContent = $optiIniContent -replace '(?m)^(\s*AmpereMfgUnlock\s*=\s*).*$', '${1}true'
+    if ($optiIniContent -match '(?m)^External\s*=') {
+        $optiIniContent = $optiIniContent -replace '(?m)^External\s*=.*', 'External=true'
+    } else {
+        $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nExternal=true"
+    }
+    if ($optiIniContent -match '(?m)^AmpereMfgUnlock\s*=') {
+        $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*', 'AmpereMfgUnlock=true'
+    } else {
+        $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
+    }
     Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
     Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true)" -ForegroundColor Gray
 }

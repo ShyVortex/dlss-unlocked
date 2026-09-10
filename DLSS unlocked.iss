@@ -150,7 +150,7 @@ begin
   for I := 0 to GetArrayLength(Lines) - 1 do
   begin
     LineTrim := Trim(Lines[I]);
-    if Pos(KeyPrefix, LineTrim) = 1 then
+    if (Pos(KeyPrefix, LineTrim) = 1) and (LineTrim <> NewKeyValue) then
     begin
       Lines[I] := NewKeyValue;
       Modified := True;
