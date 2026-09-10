@@ -242,6 +242,21 @@ if ($StreamlineDlssNrUrl) {
     }
 }
 
+# Validate that all required Streamline files exist
+$requiredStreamlineFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
+$missingStreamlineFiles = @()
+foreach ($rf in $requiredStreamlineFiles) {
+    $rfPath = Join-Path $StreamlineDir $rf
+    if (-not (Test-Path $rfPath)) {
+        $missingStreamlineFiles += $rf
+    }
+}
+if ($missingStreamlineFiles.Count -gt 0) {
+    Write-Warning "Streamline validation warning: Missing files in ${StreamlineDir}: $($missingStreamlineFiles -join ', ')"
+} else {
+    Write-Host "Streamline files verified (including sl.interposer.dll and sl.dlss_nr.dll)" -ForegroundColor Green
+}
+
 # Download patched nvngx_dlssnr.dll to root build directory
 if ($PatchedDlssnrUrl) {
     Write-Host "Downloading patched nvngx_dlssnr.dll from $PatchedDlssnrUrl..." -ForegroundColor Yellow
