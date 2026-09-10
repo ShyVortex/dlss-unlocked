@@ -133,11 +133,8 @@ Type: dirifempty; Name: "{app}\OptiScaler\D3D12_OptiScaler"
 [Icons]
 
 [INI]
-Filename: "{app}\OptiScaler.ini"; Section: "DlssNr"; Key: "Enabled"; String: "auto"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "Enabled"; String: "true"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGInput"; String: "nvngxfg"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGNvngxReplacement"; String: "Arturs"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "External"; String: "true"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "AmpereMfgUnlock"; String: "true"; Components: core
 
 [Run]
 Filename: "{app}\Licenses\DISCLAIMER.txt"; Description: "View the DLSS Unlocked Disclaimer and Licenses"; Flags: postinstall shellexec skipifsilent unchecked
@@ -153,11 +150,8 @@ begin
     IniPath := ExpandConstant('{app}\OptiScaler.ini');
     if FileExists(IniPath) then
     begin
-      SetIniString('DlssNr', 'Enabled', 'auto', IniPath);
-      SetIniString('FrameGen', 'Enabled', 'true', IniPath);
-      SetIniString('FrameGen', 'FGInput', 'nvngxfg', IniPath);
-      SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath);
-      SetIniString('FrameGen', 'FGNvngxReplacement', 'Arturs', IniPath);
+      SetIniString('FrameGen', 'External', 'true', IniPath);
+      SetIniString('FrameGen', 'AmpereMfgUnlock', 'true', IniPath);
     end;
   end;
 end;

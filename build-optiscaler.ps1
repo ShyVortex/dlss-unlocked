@@ -305,16 +305,10 @@ Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
-# Configure OptiScaler.ini (DlssNr and FrameGen)
+# Configure OptiScaler.ini (FrameGen)
 if (Test-Path "$DllVersionDir\OptiScaler.ini") {
     $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
-    # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
-    $oldComment = '; nvngxfg  - Limited to FSR 3 FG (MFG with DLSS Enabler''s dll). Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-    $newComment = '; nvngxfg  - Uses MFG with DLSS Enabler''s dll. Can be paired with ''dlssg'' (with Streamline) or ''fsrfg'' FG Output. Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-    if ($optiIniContent.Contains($oldComment)) {
-        $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
-    }
-    # 2. Helper to safely update a key within a specific INI section
+    # Helper to safely update a key within a specific INI section
     function Set-IniKey {
         param(
             [string]$Content,
@@ -368,15 +362,12 @@ if (Test-Path "$DllVersionDir\OptiScaler.ini") {
         return ($newLines -join "`r`n")
     }
 
-    # Configure [DlssNr] and [FrameGen]
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "DlssNr" -Key "Enabled" -Value "auto"
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "Enabled" -Value "true"
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGInput" -Value "nvngxfg"
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
-    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
+    # Configure [FrameGen]
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "External" -Value "true"
+    $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "AmpereMfgUnlock" -Value "true"
 
     Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-    Write-Host "Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)" -ForegroundColor Gray
+    Write-Host "Configured OptiScaler.ini (FrameGen.External=true, FrameGen.AmpereMfgUnlock=true)" -ForegroundColor Gray
 }
 
 if ($CreateStandaloneZip) {
