@@ -109,6 +109,9 @@ Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler
 Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries
 Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: optional/fgdebug
 
+; Native Turing/Ampere MFG unlocker ({app}\OptiScaler\dlssg_sm86)
+Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
+
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
 Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll,NvLowLatencyVk.dll,nvngx_deepdvc.dll,sl.deepdvc.dll,sl.directsr.dll,sl.nis.dll,nis.license.txt,development\*"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
 
@@ -120,6 +123,12 @@ Source: "Dll version\FidelityFX_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: i
 Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}\Licenses"; DestName: "dlssg_sm86_THIRD_PARTY_NOTICES.txt"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+
+[InstallDelete]
+; Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
+Type: files; Name: "{app}\OptiScaler\D3D12_OptiScaler\D3D12Core.dll"
+Type: dirifempty; Name: "{app}\OptiScaler\D3D12_OptiScaler"
 
 [Icons]
 

@@ -10,6 +10,9 @@ param(
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [string]$OriginalDlssnrUrl = "https://files.catbox.moe/05wm7b.dll",
     [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",
+    [string]$DlssgSm86VersionDllUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/version.dll",
+    [string]$DlssgSm86IniUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/dlssg_sm86.ini",
+    [string]$DlssgSm86NoticesUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/THIRD_PARTY_NOTICES.txt",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -130,8 +133,11 @@ Copy-ExtractedFile -Pattern "amd_fidelityfx_loader_dx12.dll" -DestinationName "a
 Copy-ExtractedFile -Pattern "amd_fidelityfx_upscaler_dx12.dll" -DestinationName "amd_fidelityfx_upscaler_dx12.dll"
 Copy-ExtractedFile -Pattern "amd_fidelityfx_vk.dll" -DestinationName "amd_fidelityfx_vk.dll"
 
-# Copy D3D12Core
+# Copy D3D12Core (ensure it is placed directly in root, not duplicated in D3D12_OptiScaler)
 Copy-ExtractedFile -Pattern "D3D12Core.dll" -DestinationName "D3D12Core.dll"
+if (Test-Path "$DllVersionDir\D3D12_OptiScaler") {
+    Remove-Item -Path "$DllVersionDir\D3D12_OptiScaler" -Recurse -Force
+}
 
 # Copy Licenses
 Copy-ExtractedFile -Pattern "XeSS_LICENSE.txt" -DestinationName "XeSS_LICENSE.txt"
@@ -246,6 +252,51 @@ if ($PatchedDlssnrUrl) {
     } catch {
         Write-Host "Warning: Could not download patched nvngx_dlssnr.dll: $($_.Exception.Message)" -ForegroundColor Yellow
     }
+}
+
+# Download and bundle dlssg_for_sm86 (Turing/Ampere MFG unlocker)
+$DlssgSm86Dir = Join-Path $DllVersionDir "dlssg_sm86"
+if (!(Test-Path $DlssgSm86Dir)) {
+    New-Item -ItemType Directory -Path $DlssgSm86Dir | Out-Null
+}
+
+$targetDlssgDll = Join-Path $DlssgSm86Dir "dlssg_sm86.dll"
+if (-not (Test-Path $targetDlssgDll) -and $DlssgSm86VersionDllUrl) {
+    Write-Host "Downloading dlssg_sm86.dll from $DlssgSm86VersionDllUrl..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $DlssgSm86VersionDllUrl -OutFile $targetDlssgDll -UseBasicParsing -TimeoutSec 300
+        Write-Host "dlssg_sm86.dll downloaded to $targetDlssgDll" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download dlssg_sm86.dll: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "dlssg_sm86.dll already present in dlssg_sm86 folder." -ForegroundColor Gray
+}
+
+$targetDlssgIni = Join-Path $DlssgSm86Dir "dlssg_sm86.ini"
+if (-not (Test-Path $targetDlssgIni) -and $DlssgSm86IniUrl) {
+    Write-Host "Downloading dlssg_sm86.ini from $DlssgSm86IniUrl..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $DlssgSm86IniUrl -OutFile $targetDlssgIni -UseBasicParsing -TimeoutSec 300
+        Write-Host "dlssg_sm86.ini downloaded to $targetDlssgIni" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download dlssg_sm86.ini: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "dlssg_sm86.ini already present in dlssg_sm86 folder." -ForegroundColor Gray
+}
+
+$targetDlssgNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
+if (-not (Test-Path $targetDlssgNotices) -and $DlssgSm86NoticesUrl) {
+    Write-Host "Downloading THIRD_PARTY_NOTICES.txt from $DlssgSm86NoticesUrl..." -ForegroundColor Yellow
+    try {
+        Invoke-WebRequest -Uri $DlssgSm86NoticesUrl -OutFile $targetDlssgNotices -UseBasicParsing -TimeoutSec 300
+        Write-Host "dlssg_sm86 THIRD_PARTY_NOTICES.txt downloaded to $targetDlssgNotices" -ForegroundColor Green
+    } catch {
+        Write-Host "Warning: Could not download dlssg_sm86 THIRD_PARTY_NOTICES.txt: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "dlssg_sm86 THIRD_PARTY_NOTICES.txt already present in dlssg_sm86 folder." -ForegroundColor Gray
 }
 
 Write-Host ""
@@ -397,6 +448,11 @@ if ($CreateStandaloneZip) {
         }
     }
 
+    # Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
+    if (Test-Path "$optiScalerSubDir\D3D12_OptiScaler") {
+        Remove-Item -Path "$optiScalerSubDir\D3D12_OptiScaler" -Recurse -Force
+    }
+
     # Copy nvfp4 folder if present
     if (Test-Path "$DllVersionDir\nvfp4") {
         $destNvfp4 = Join-Path $optiScalerSubDir "nvfp4"
@@ -413,6 +469,14 @@ if ($CreateStandaloneZip) {
             Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
         }
         Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
+    }
+
+    # Copy dlssg_sm86 folder if present
+    if (Test-Path "$DllVersionDir\dlssg_sm86") {
+        $destDlssgSm86 = Join-Path $optiScalerSubDir "dlssg_sm86"
+        if (Test-Path $destDlssgSm86) { Remove-Item -Path $destDlssgSm86 -Recurse -Force }
+        Copy-Item -Path "$DllVersionDir\dlssg_sm86" -Destination $optiScalerSubDir -Recurse -Force
+        Write-Host "  dlssg_sm86 -> $destDlssgSm86" -ForegroundColor Gray
     }
 
     # 3. Licenses folder
@@ -432,6 +496,9 @@ if ($CreateStandaloneZip) {
         if (Test-Path "$DllVersionDir\$lic") {
             Copy-Item -Path "$DllVersionDir\$lic" -Destination $licensesSubDir -Force
         }
+    }
+    if (Test-Path "$DllVersionDir\dlssg_sm86\THIRD_PARTY_NOTICES.txt") {
+        Copy-Item -Path "$DllVersionDir\dlssg_sm86\THIRD_PARTY_NOTICES.txt" -Destination "$licensesSubDir\dlssg_sm86_THIRD_PARTY_NOTICES.txt" -Force
     }
     Write-Host "  Licenses -> $licensesSubDir" -ForegroundColor Gray
 

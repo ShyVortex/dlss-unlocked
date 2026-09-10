@@ -55,6 +55,9 @@ env:
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
   STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
+  DLSSG_SM86_VERSION_DLL_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/version.dll"
+  DLSSG_SM86_INI_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/dlssg_sm86.ini"
+  DLSSG_SM86_NOTICES_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/THIRD_PARTY_NOTICES.txt"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
@@ -549,8 +552,11 @@ jobs:
         Copy-ExtractedFile -Filter "amd_fidelityfx_upscaler_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_upscaler_dx12.dll"
         Copy-ExtractedFile -Filter "amd_fidelityfx_vk.dll" -DestinationPath "Dll version\amd_fidelityfx_vk.dll"
 
-        # Copy D3D12Core
+        # Copy D3D12Core (ensure it is placed directly in root, not duplicated in D3D12_OptiScaler)
         Copy-ExtractedFile -Filter "D3D12Core.dll" -DestinationPath "Dll version\D3D12Core.dll"
+        if (Test-Path "Dll version\D3D12_OptiScaler") {
+            Remove-Item -Path "Dll version\D3D12_OptiScaler" -Recurse -Force
+        }
 
         # Copy Signature Override files
         Copy-ExtractedFile -Filter "DisableSignatureOverride.reg" -DestinationPath "DLLSG mod\DisableNvidiaSignatureChecks.reg"
@@ -764,6 +770,51 @@ jobs:
                     }
                     Start-Sleep -Seconds (5 * $retryCount)
                 }
+            }
+        }
+
+    - name: Cache dlssg_sm86 files
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      uses: actions/cache@v4
+      id: cache-dlssg-sm86
+      with:
+        path: Dll version/dlssg_sm86
+        key: dlssg-sm86-v1
+
+    - name: Download and bundle dlssg_sm86 (Turing/Ampere MFG unlocker)
+      if: steps.cache-dlssg-sm86.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      shell: powershell
+      run: |
+        $dlssgDir = "Dll version\dlssg_sm86"
+        if (-not (Test-Path $dlssgDir)) { New-Item -ItemType Directory -Path $dlssgDir -Force | Out-Null }
+        
+        $filesToDownload = @(
+            @{ Url = "$env:DLSSG_SM86_VERSION_DLL_URL"; OutFile = "$dlssgDir\dlssg_sm86.dll"; Name = "dlssg_sm86.dll (renamed from version.dll)" },
+            @{ Url = "$env:DLSSG_SM86_INI_URL"; OutFile = "$dlssgDir\dlssg_sm86.ini"; Name = "dlssg_sm86.ini" },
+            @{ Url = "$env:DLSSG_SM86_NOTICES_URL"; OutFile = "$dlssgDir\THIRD_PARTY_NOTICES.txt"; Name = "THIRD_PARTY_NOTICES.txt" }
+        )
+        
+        foreach ($item in $filesToDownload) {
+            if (-not (Test-Path $item.OutFile)) {
+                Write-Host "Downloading $($item.Name) from $($item.Url)..."
+                $retries = 3
+                $downloaded = $false
+                for ($r = 1; $r -le $retries; $r++) {
+                    try {
+                        Invoke-WebRequest -Uri $item.Url -OutFile $item.OutFile -UseBasicParsing -TimeoutSec 300
+                        $downloaded = $true
+                        Write-Host "$($item.Name) downloaded successfully."
+                        break
+                    } catch {
+                        Write-Warning "Download attempt $r failed for $($item.Name): $($_.Exception.Message)"
+                        if ($r -lt $retries) { Start-Sleep -Seconds (3 * $r) }
+                    }
+                }
+                if (-not $downloaded) {
+                    throw "Failed to download required dlssg_sm86 file: $($item.Name)"
+                }
+            } else {
+                Write-Host "$($item.Name) already present."
             }
         }
 
@@ -1020,6 +1071,11 @@ jobs:
                 Copy-Item -Path "Dll version\$cDll" -Destination $optiScalerSubDir -Force
             }
         }
+
+        # Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
+        if (Test-Path "$optiScalerSubDir\D3D12_OptiScaler") {
+            Remove-Item -Path "$optiScalerSubDir\D3D12_OptiScaler" -Recurse -Force
+        }
         
         # Copy nvfp4 folder if present
         if (Test-Path "Dll version\nvfp4") {
@@ -1035,6 +1091,14 @@ jobs:
                 Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
             }
             Write-Host "Copied NVIDIA Streamline files to standalone archive OptiScaler/streamline"
+        }
+
+        # Copy dlssg_sm86 folder if present
+        $dlssgSm86SubDir = Join-Path $optiScalerSubDir "dlssg_sm86"
+        if (Test-Path "Dll version\dlssg_sm86") {
+            New-Item -ItemType Directory -Path $dlssgSm86SubDir -Force | Out-Null
+            Copy-Item -Path "Dll version\dlssg_sm86\*" -Destination $dlssgSm86SubDir -Recurse -Force
+            Write-Host "Copied dlssg_sm86 files to standalone archive OptiScaler/dlssg_sm86"
         }
 
         # 3. Licenses folder
@@ -1054,6 +1118,9 @@ jobs:
             if (Test-Path "Dll version\$lic") {
                 Copy-Item -Path "Dll version\$lic" -Destination $licensesSubDir -Force
             }
+        }
+        if (Test-Path "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt") {
+            Copy-Item -Path "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt" -Destination "$licensesSubDir\dlssg_sm86_THIRD_PARTY_NOTICES.txt" -Force
         }
         Write-Host "Copied Licenses folder to standalone archive"
         
