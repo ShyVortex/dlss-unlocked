@@ -14,7 +14,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 > ### Acknowledgments
 > This project is only made possible thanks to the extraordinary dedication of talented open-source developers.
 >
-> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[OptiScaler](https://github.com/optiscaler/OptiScaler)**, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
+> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[OptiScaler](https://github.com/optiscaler/OptiScaler)**, **[wilsjo2](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** for the pre-SR multipass enhancements, **[sdli1995](https://github.com/sdli1995/dlssg_for_sm86)** for the native Turing/Ampere MFG unlocker, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
 >
 > If you enjoy this project, please consider visiting their repositories, starring their work, and supporting their donation channels directly!
 
@@ -26,9 +26,9 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 ## ✨ Features
 
-- **Multi-Frame Generation (MFG):** Generate multiple interpolated frames (2X, 3X, 4X) via DLSS Enabler's headless frame generation pipeline.
-- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to DLSS Frame Generation (with RTX 40 series GPU, only for the first generated frame) or AMD FidelityFX FSR 3.1 Frame Generation (RTX 20 and 30 series GPUs, all generated frames) via OptiScaler.
-- **Neural Rendering (DLSS-NR):** Full support for Dagherbou's OptiScaler_DLSSNR upscaling backend and forwarder.
+- **Multi-Frame Generation (MFG):** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. DLSS Enabler headless is also bundled as an alternative companion option.
+- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
+- **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for wilsjo2's OptiScaler-DLSSNR-PreSR-Multipass backend, featuring pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
 
@@ -48,6 +48,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
+   - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`)
    - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
    - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, third-party libraries, and legal disclaimers
 3. **(Linux)** Launch a game with the following options: `WINEDLLOVERRIDES="dxgi=n,b" %command%`.
@@ -56,13 +57,14 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 ## 🎮 Supported GPUs
 
-- NVIDIA GeForce RTX 20xx / 30xx / 40xx
+- **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere):** Enabled out of the box with the bundled `dlssg_sm86` native MFG unlocker.
+- **NVIDIA GeForce RTX 40xx (Ada Lovelace):** Fully supported; can switch to the Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via the in-game overlay or `OptiScaler.ini`.
 
 ---
 
 ## 🚀 Automated CI Builds
 
-This repository automatically tracks and synchronizes with upstream [OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR):
+This repository automatically tracks and synchronizes with upstream [OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass):
 1. Checks for new releases every 3 hours.
 2. Packages the latest upscaler binaries, neural rendering forwarders, and companion libraries.
 3. Automatically builds and publishes both `.exe` installer and `.zip` standalone manual packages on new releases.
@@ -74,7 +76,7 @@ This repository automatically tracks and synchronizes with upstream [OptiScaler_
 To build the standalone package or installer locally:
 
 ```powershell
-# 1. Download latest OptiScaler_DLSSNR and package standalone zip
+# 1. Download latest OptiScaler-DLSSNR-PreSR-Multipass and package standalone zip
 .\build-optiscaler.ps1 -DownloadLatest -CreateStandaloneZip
 
 # 2. Compile Inno Setup installer (requires Inno Setup 6.2+)
@@ -100,6 +102,8 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 
 ## 📜 Credits
 
+- **[OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** by wilsjo2
+- **[dlssg_for_sm86](https://github.com/sdli1995/dlssg_for_sm86)** by sdli1995
 - **[DLSS Enabler](https://github.com/artur-graniszewski/DLSS-Enabler)** by Artur Graniszewski
 - **[OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR)** by Dagherbou
 - **[OptiScaler](https://github.com/optiscaler/OptiScaler)**

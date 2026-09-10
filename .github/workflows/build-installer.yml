@@ -50,11 +50,14 @@ permissions:
   actions: read
 
 env:
-  OPTISCALER_REPO: Dagherbou/OptiScaler_DLSSNR
+  OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
   STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
   STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
+  DLSSG_SM86_VERSION_DLL_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/version.dll"
+  DLSSG_SM86_INI_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/dlssg_sm86.ini"
+  DLSSG_SM86_NOTICES_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/THIRD_PARTY_NOTICES.txt"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
@@ -405,6 +408,7 @@ jobs:
           Dll version/amd_fidelityfx_upscaler_dx12.dll
           Dll version/amd_fidelityfx_vk.dll
           Dll version/D3D12Core.dll
+          Dll version/nvfp4
           DLLSG mod/DisableNvidiaSignatureChecks.reg
           DLLSG mod/RestoreNvidiaSignatureChecks.reg
         key: optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ hashFiles('Dll version/nvngx.ini') }}
@@ -412,7 +416,7 @@ jobs:
           optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
           optiscaler-
 
-    - name: Download and extract OptiScaler_DLSSNR
+    - name: Download and extract OptiScaler-DLSSNR-PreSR-Multipass
       if: steps.cache-optiscaler.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       shell: powershell
       run: |
@@ -548,8 +552,11 @@ jobs:
         Copy-ExtractedFile -Filter "amd_fidelityfx_upscaler_dx12.dll" -DestinationPath "Dll version\amd_fidelityfx_upscaler_dx12.dll"
         Copy-ExtractedFile -Filter "amd_fidelityfx_vk.dll" -DestinationPath "Dll version\amd_fidelityfx_vk.dll"
 
-        # Copy D3D12Core
+        # Copy D3D12Core (ensure it is placed directly in root, not duplicated in D3D12_OptiScaler)
         Copy-ExtractedFile -Filter "D3D12Core.dll" -DestinationPath "Dll version\D3D12Core.dll"
+        if (Test-Path "Dll version\D3D12_OptiScaler") {
+            Remove-Item -Path "Dll version\D3D12_OptiScaler" -Recurse -Force
+        }
 
         # Copy Signature Override files
         Copy-ExtractedFile -Filter "DisableSignatureOverride.reg" -DestinationPath "DLLSG mod\DisableNvidiaSignatureChecks.reg"
@@ -561,6 +568,15 @@ jobs:
         Copy-ExtractedFile -Filter "FidelityFX_v2_LICENSE.md" -DestinationPath "Dll version\FidelityFX_v2_LICENSE.md"
         Copy-ExtractedFile -Filter "DirectX_LICENSE.txt" -DestinationPath "Dll version\DirectX_LICENSE.txt"
         Copy-ExtractedFile -Filter "RenoDX_ATTRIBUTION.txt" -DestinationPath "Dll version\RenoDX_ATTRIBUTION.txt"
+
+        # Copy nvfp4 folder if present
+        $foundNvfp4 = Get-ChildItem -Path $extractDir -Filter "nvfp4" -Recurse -Directory | Select-Object -First 1
+        if ($foundNvfp4) {
+            $destNvfp4 = Join-Path "Dll version" "nvfp4"
+            if (Test-Path $destNvfp4) { Remove-Item -Path $destNvfp4 -Recurse -Force }
+            Copy-Item -Path $foundNvfp4.FullName -Destination "Dll version" -Recurse -Force
+            Write-Host "Copied nvfp4 folder to Dll version\nvfp4"
+        }
 
         # Verify copied files
         Write-Host ""
@@ -757,6 +773,51 @@ jobs:
             }
         }
 
+    - name: Cache dlssg_sm86 files
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      uses: actions/cache@v4
+      id: cache-dlssg-sm86
+      with:
+        path: Dll version/dlssg_sm86
+        key: dlssg-sm86-v1
+
+    - name: Download and bundle dlssg_sm86 (Turing/Ampere MFG unlocker)
+      if: steps.cache-dlssg-sm86.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      shell: powershell
+      run: |
+        $dlssgDir = "Dll version\dlssg_sm86"
+        if (-not (Test-Path $dlssgDir)) { New-Item -ItemType Directory -Path $dlssgDir -Force | Out-Null }
+        
+        $filesToDownload = @(
+            @{ Url = "$env:DLSSG_SM86_VERSION_DLL_URL"; OutFile = "$dlssgDir\dlssg_sm86.dll"; Name = "dlssg_sm86.dll (renamed from version.dll)" },
+            @{ Url = "$env:DLSSG_SM86_INI_URL"; OutFile = "$dlssgDir\dlssg_sm86.ini"; Name = "dlssg_sm86.ini" },
+            @{ Url = "$env:DLSSG_SM86_NOTICES_URL"; OutFile = "$dlssgDir\THIRD_PARTY_NOTICES.txt"; Name = "THIRD_PARTY_NOTICES.txt" }
+        )
+        
+        foreach ($item in $filesToDownload) {
+            if (-not (Test-Path $item.OutFile)) {
+                Write-Host "Downloading $($item.Name) from $($item.Url)..."
+                $retries = 3
+                $downloaded = $false
+                for ($r = 1; $r -le $retries; $r++) {
+                    try {
+                        Invoke-WebRequest -Uri $item.Url -OutFile $item.OutFile -UseBasicParsing -TimeoutSec 300
+                        $downloaded = $true
+                        Write-Host "$($item.Name) downloaded successfully."
+                        break
+                    } catch {
+                        Write-Warning "Download attempt $r failed for $($item.Name): $($_.Exception.Message)"
+                        if ($r -lt $retries) { Start-Sleep -Seconds (3 * $r) }
+                    }
+                }
+                if (-not $downloaded) {
+                    throw "Failed to download required dlssg_sm86 file: $($item.Name)"
+                }
+            } else {
+                Write-Host "$($item.Name) already present."
+            }
+        }
+
     - name: Prepare release metadata
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       id: release_meta
@@ -824,13 +885,7 @@ jobs:
       run: |
         if (Test-Path "Dll version\OptiScaler.ini") {
             $optiIniContent = Get-Content "Dll version\OptiScaler.ini" -Raw
-            # 1. Update comments for nvngxfg to reflect dlssg & fsrfg compatibility
-            $oldComment = '; nvngxfg  - Limited to FSR 3 FG (MFG with DLSS Enabler''s dll). Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-            $newComment = '; nvngxfg  - Uses MFG with DLSS Enabler''s dll. Can be paired with ''dlssg'' (with Streamline) or ''fsrfg'' FG Output. Requires DLSSG in the game. Supports Hudless out of the box. Uses Streamline swapchain for pacing.'
-            if ($optiIniContent.Contains($oldComment)) {
-                $optiIniContent = $optiIniContent.Replace($oldComment, $newComment)
-            }
-            # 2. Helper to safely update a key within a specific INI section
+            # Helper to safely update a key within a specific INI section
             function Set-IniKey {
                 param(
                     [string]$Content,
@@ -884,15 +939,12 @@ jobs:
                 return ($newLines -join "`r`n")
             }
 
-            # Configure [DlssNr] and [FrameGen]
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "DlssNr" -Key "Enabled" -Value "auto"
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "Enabled" -Value "true"
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGInput" -Value "nvngxfg"
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGOutput" -Value "dlssg"
-            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "FGNvngxReplacement" -Value "Arturs"
+            # Configure [FrameGen]
+            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "External" -Value "true"
+            $optiIniContent = Set-IniKey -Content $optiIniContent -Section "FrameGen" -Key "AmpereMfgUnlock" -Value "true"
 
             Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (DlssNr.Enabled=auto, FrameGen.Enabled=true, FGInput=nvngxfg, FGOutput=dlssg, FGNvngxReplacement=Arturs)"
+            Write-Host "Configured OptiScaler.ini (FrameGen.External=true, FrameGen.AmpereMfgUnlock=true)"
         }
 
     - name: Update version in Inno Setup script
@@ -1010,7 +1062,18 @@ jobs:
                 Copy-Item -Path "Dll version\$cDll" -Destination $optiScalerSubDir -Force
             }
         }
+
+        # Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
+        if (Test-Path "$optiScalerSubDir\D3D12_OptiScaler") {
+            Remove-Item -Path "$optiScalerSubDir\D3D12_OptiScaler" -Recurse -Force
+        }
         
+        # Copy nvfp4 folder if present
+        if (Test-Path "Dll version\nvfp4") {
+            Copy-Item -Path "Dll version\nvfp4" -Destination $optiScalerSubDir -Recurse -Force
+            Write-Host "Copied nvfp4 folder to standalone archive OptiScaler/nvfp4"
+        }
+
         # Copy NVIDIA Streamline files
         $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
         New-Item -ItemType Directory -Path $streamlineSubDir -Force | Out-Null
@@ -1019,6 +1082,14 @@ jobs:
                 Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
             }
             Write-Host "Copied NVIDIA Streamline files to standalone archive OptiScaler/streamline"
+        }
+
+        # Copy dlssg_sm86 folder if present
+        $dlssgSm86SubDir = Join-Path $optiScalerSubDir "dlssg_sm86"
+        if (Test-Path "Dll version\dlssg_sm86") {
+            New-Item -ItemType Directory -Path $dlssgSm86SubDir -Force | Out-Null
+            Copy-Item -Path "Dll version\dlssg_sm86\*" -Destination $dlssgSm86SubDir -Recurse -Force
+            Write-Host "Copied dlssg_sm86 files to standalone archive OptiScaler/dlssg_sm86"
         }
 
         # 3. Licenses folder
@@ -1038,6 +1109,9 @@ jobs:
             if (Test-Path "Dll version\$lic") {
                 Copy-Item -Path "Dll version\$lic" -Destination $licensesSubDir -Force
             }
+        }
+        if (Test-Path "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt") {
+            Copy-Item -Path "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt" -Destination "$licensesSubDir\dlssg_sm86_THIRD_PARTY_NOTICES.txt" -Force
         }
         Write-Host "Copied Licenses folder to standalone archive"
         
@@ -1116,17 +1190,17 @@ jobs:
         tag_name: ${{ steps.release_meta.outputs.effective_tag }}
         name: ${{ steps.release_meta.outputs.release_title }}
         body: |
-          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler_DLSSNR ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
+          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler_DLSSNR, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, DLSS Enabler MFG, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, and companion modules.
-          - **OptiScaler_DLSSNR Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
+          - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **NVIDIA Streamline 2.14.1**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
           - **DLSS Enabler Headless**: Multi-Frame Generation (MFG: 2X, 3X, 4X) module (`dlss-enabler-headless.dll`)
-          - **XeSS / XeLL Libraries**: Latest from OptiScaler_DLSSNR package
-          - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler_DLSSNR package
+          - **XeSS / XeLL Libraries**: Latest from OptiScaler package
+          - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler package
           - **DLSSG to FSR3 Module**: Nukem9's mod
           - **Registry Overrides**: Latest signature override scripts
           
@@ -1148,7 +1222,7 @@ jobs:
           - **Build Date**: ${{ steps.date.outputs.date }}
           - **Release Tag**: ${{ steps.release_meta.outputs.effective_tag }}
           - **Release Type**: ${{ steps.release_meta.outputs.display_type }}
-          - **OptiScaler_DLSSNR**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
+          - **OptiScaler Backend**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
           - **Package**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
           - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
           
@@ -1156,12 +1230,13 @@ jobs:
           - NVIDIA GeForce RTX 20xx / 30xx / 40xx
           
           ## 📜 Credits
+          - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler**: https://github.com/optiscaler/OptiScaler
           
           ---
-          Built with OptiScaler_DLSSNR `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
+          Built with OptiScaler-DLSSNR-PreSR-Multipass `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
         files: |
           Output/*.exe
           Output/*.zip

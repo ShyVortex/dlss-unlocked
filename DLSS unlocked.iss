@@ -53,7 +53,7 @@ Name: mainfiles/dllversion; Description: Install as version.dll (alternative hoo
 Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); Types: custom; Flags: exclusive
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
-Name: core; Description: Install OptiScaler_DLSSNR core, upscaler and neural rendering components; Flags: fixed; Types: full custom
+Name: core; Description: Install OptiScaler-DLSSNR-PreSR-Multipass core, upscaler and neural rendering components; Flags: fixed; Types: full custom
 Name: streamline; Description: "NVIDIA Streamline 2.14.1 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
@@ -102,11 +102,15 @@ Source: "Dll version\libxess_dx11.dll"; DestDir: "{app}\OptiScaler"; Flags: igno
 Source: "Dll version\libxess_fg.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\libxell.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\D3D12Core.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvfp4\*"; DestDir: "{app}\OptiScaler\nvfp4"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; Signature check overrides and optional debug configs
 Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries
 Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries
 Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: optional/fgdebug
+
+; Native Turing/Ampere MFG unlocker ({app}\OptiScaler\dlssg_sm86)
+Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
 Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll,NvLowLatencyVk.dll,nvngx_deepdvc.dll,sl.deepdvc.dll,sl.directsr.dll,sl.nis.dll,nis.license.txt,development\*"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
@@ -119,15 +123,18 @@ Source: "Dll version\FidelityFX_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: i
 Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}\Licenses"; DestName: "dlssg_sm86_THIRD_PARTY_NOTICES.txt"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+
+[InstallDelete]
+; Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
+Type: files; Name: "{app}\OptiScaler\D3D12_OptiScaler\D3D12Core.dll"
+Type: dirifempty; Name: "{app}\OptiScaler\D3D12_OptiScaler"
 
 [Icons]
 
 [INI]
-Filename: "{app}\OptiScaler.ini"; Section: "DlssNr"; Key: "Enabled"; String: "auto"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "Enabled"; String: "true"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGInput"; String: "nvngxfg"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGOutput"; String: "dlssg"; Components: core
-Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "FGNvngxReplacement"; String: "Arturs"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "External"; String: "true"; Components: core
+Filename: "{app}\OptiScaler.ini"; Section: "FrameGen"; Key: "AmpereMfgUnlock"; String: "true"; Components: core
 
 [Run]
 Filename: "{app}\Licenses\DISCLAIMER.txt"; Description: "View the DLSS Unlocked Disclaimer and Licenses"; Flags: postinstall shellexec skipifsilent unchecked
@@ -143,11 +150,8 @@ begin
     IniPath := ExpandConstant('{app}\OptiScaler.ini');
     if FileExists(IniPath) then
     begin
-      SetIniString('DlssNr', 'Enabled', 'auto', IniPath);
-      SetIniString('FrameGen', 'Enabled', 'true', IniPath);
-      SetIniString('FrameGen', 'FGInput', 'nvngxfg', IniPath);
-      SetIniString('FrameGen', 'FGOutput', 'dlssg', IniPath);
-      SetIniString('FrameGen', 'FGNvngxReplacement', 'Arturs', IniPath);
+      SetIniString('FrameGen', 'External', 'true', IniPath);
+      SetIniString('FrameGen', 'AmpereMfgUnlock', 'true', IniPath);
     end;
   end;
 end;
