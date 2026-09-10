@@ -118,7 +118,8 @@ function Copy-ExtractedFile {
 Copy-ExtractedFile -Pattern "OptiScaler.dll" -DestinationName "dlss-unlocked-upscaler.dll"
 Copy-ExtractedFile -Pattern "OptiScaler.dll" -DestinationName "OptiScaler.dll"
 Copy-ExtractedFile -Pattern "nvngx.dll_dlssnr.dll" -DestinationName "nvngx.dll_dlssnr.dll"
-Copy-ExtractedFile -Pattern "OptiScaler.ini" -DestinationName "OptiScaler.ini"
+Copy-ExtractedFile -Pattern "OptiScaler.ini" -DestinationName "OptiScaler.ini.template"
+Copy-Item -Path "$DllVersionDir\OptiScaler.ini.template" -Destination "$DllVersionDir\OptiScaler.ini" -Force
 
 # Copy XeSS and XeLL
 Copy-ExtractedFile -Pattern "libxess.dll" -DestinationName "libxess.dll"
@@ -321,8 +322,17 @@ Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
 
 # Configure OptiScaler.ini (safe regex substitution matching commit e71ba60)
-if (Test-Path "$DllVersionDir\OptiScaler.ini") {
-    $optiIniContent = Get-Content "$DllVersionDir\OptiScaler.ini" -Raw
+$templatePath = "$DllVersionDir\OptiScaler.ini.template"
+$targetPath = "$DllVersionDir\OptiScaler.ini"
+if (Test-Path $templatePath) {
+    Copy-Item -Path $templatePath -Destination $targetPath -Force
+}
+if (Test-Path $targetPath) {
+    $optiIniContent = Get-Content $targetPath -Raw
+    # Strip UTF-8 BOM if present
+    $optiIniContent = $optiIniContent.TrimStart([char]0xFEFF)
+    # Remove any rogue AmpereMfgUnlock placed outside [DLSSG]
+    $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*\r?\n(?=[\s\S]*\[DLSSG\])', ''
     if ($optiIniContent -match '(?m)^External\s*=') {
         $optiIniContent = $optiIniContent -replace '(?m)^External\s*=.*', 'External=true'
     } else {
@@ -333,8 +343,9 @@ if (Test-Path "$DllVersionDir\OptiScaler.ini") {
     } else {
         $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
     }
-    Set-Content -Path "$DllVersionDir\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true)" -ForegroundColor Gray
+    $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+    [System.IO.File]::WriteAllText((Resolve-Path $targetPath).Path, $optiIniContent, $utf8NoBom)
+    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, UTF8 without BOM)" -ForegroundColor Gray
 }
 
 if ($CreateStandaloneZip) {

@@ -397,7 +397,7 @@ jobs:
           Dll version/dlss-unlocked-upscaler.dll
           Dll version/OptiScaler.dll
           Dll version/nvngx.dll_dlssnr.dll
-          Dll version/OptiScaler.ini
+          Dll version/OptiScaler.ini.template
           Dll version/libxess.dll
           Dll version/libxess_dx11.dll
           Dll version/libxess_fg.dll
@@ -411,10 +411,10 @@ jobs:
           Dll version/nvfp4
           DLLSG mod/DisableNvidiaSignatureChecks.reg
           DLLSG mod/RestoreNvidiaSignatureChecks.reg
-        key: optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ hashFiles('Dll version/nvngx.ini') }}
+        key: optiscaler-v3-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ hashFiles('Dll version/nvngx.ini') }}
         restore-keys: |
-          optiscaler-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
-          optiscaler-
+          optiscaler-v3-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
+          optiscaler-v3-
 
     - name: Download and extract OptiScaler-DLSSNR-PreSR-Multipass
       if: steps.cache-optiscaler.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -537,7 +537,8 @@ jobs:
         Copy-ExtractedFile -Filter "OptiScaler.dll" -DestinationPath "Dll version\dlss-unlocked-upscaler.dll"
         Copy-ExtractedFile -Filter "OptiScaler.dll" -DestinationPath "Dll version\OptiScaler.dll"
         Copy-ExtractedFile -Filter "nvngx.dll_dlssnr.dll" -DestinationPath "Dll version\nvngx.dll_dlssnr.dll"
-        Copy-ExtractedFile -Filter "OptiScaler.ini" -DestinationPath "Dll version\OptiScaler.ini"
+        Copy-ExtractedFile -Filter "OptiScaler.ini" -DestinationPath "Dll version\OptiScaler.ini.template"
+        Copy-Item -Path "Dll version\OptiScaler.ini.template" -Destination "Dll version\OptiScaler.ini" -Force
         
         # Copy XeSS and XeLL
         Copy-ExtractedFile -Filter "libxess.dll" -DestinationPath "Dll version\libxess.dll"
@@ -883,20 +884,32 @@ jobs:
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
-        if (Test-Path "Dll version\OptiScaler.ini") {
-            $optiIniContent = Get-Content "Dll version\OptiScaler.ini" -Raw
+        $templatePath = "Dll version\OptiScaler.ini.template"
+        $targetPath = "Dll version\OptiScaler.ini"
+        if (Test-Path $templatePath) {
+            Copy-Item -Path $templatePath -Destination $targetPath -Force
+        }
+        if (Test-Path $targetPath) {
+            $optiIniContent = Get-Content $targetPath -Raw
+            # Strip UTF-8 BOM if present
+            $optiIniContent = $optiIniContent.TrimStart([char]0xFEFF)
+            # Remove any rogue AmpereMfgUnlock placed outside [DLSSG]
+            $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*\r?\n(?=[\s\S]*\[DLSSG\])', ''
+            # Update External=true under [FrameGen]
             if ($optiIniContent -match '(?m)^External\s*=') {
                 $optiIniContent = $optiIniContent -replace '(?m)^External\s*=.*', 'External=true'
             } else {
                 $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nExternal=true"
             }
+            # Update AmpereMfgUnlock=true under [DLSSG]
             if ($optiIniContent -match '(?m)^AmpereMfgUnlock\s*=') {
                 $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*', 'AmpereMfgUnlock=true'
             } else {
                 $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
             }
-            Set-Content -Path "Dll version\OptiScaler.ini" -Value $optiIniContent -Encoding UTF8
-            Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true)"
+            $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+            [System.IO.File]::WriteAllText((Resolve-Path $targetPath).Path, $optiIniContent, $utf8NoBom)
+            Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, UTF8 without BOM)"
         }
 
     - name: Update version in Inno Setup script

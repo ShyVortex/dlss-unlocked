@@ -137,27 +137,64 @@ Filename: "{app}\Licenses\DISCLAIMER.txt"; Description: "View the DLSS Unlocked 
 Filename: "{app}\OptiScaler.ini"; Description: "Edit the configuration file (optional)"; Flags: postinstall shellexec skipifsilent unchecked
 
 [Code]
-procedure SafeReplaceIniLine(const FilePath, KeyPrefix, NewKeyValue: String);
+procedure CleanAndConfigureOptiScalerIni(const FilePath: String);
 var
-  Lines: TArrayOfString;
-  I: Integer;
+  Lines, NewLines: TArrayOfString;
+  I, Count: Integer;
+  LineTrim, CurrentSection: String;
   Modified: Boolean;
-  LineTrim: String;
 begin
   if not FileExists(FilePath) then Exit;
   if not LoadStringsFromFile(FilePath, Lines) then Exit;
   Modified := False;
+  CurrentSection := '';
+  Count := 0;
+  SetArrayLength(NewLines, GetArrayLength(Lines));
+
   for I := 0 to GetArrayLength(Lines) - 1 do
   begin
     LineTrim := Trim(Lines[I]);
-    if (Pos(KeyPrefix, LineTrim) = 1) and (LineTrim <> NewKeyValue) then
+    if (Length(LineTrim) > 2) and (LineTrim[1] = '[') and (LineTrim[Length(LineTrim)] = ']') then
     begin
-      Lines[I] := NewKeyValue;
-      Modified := True;
+      CurrentSection := Uppercase(Copy(LineTrim, 2, Length(LineTrim) - 2));
     end;
+
+    // Remove rogue AmpereMfgUnlock placed outside [DLSSG] (e.g. from previous installer versions)
+    if (Pos('AmpereMfgUnlock=', LineTrim) = 1) and (CurrentSection <> 'DLSSG') then
+    begin
+      Modified := True;
+      Continue;
+    end;
+
+    // Ensure External=true under [FrameGen]
+    if (Pos('External=', LineTrim) = 1) and (CurrentSection = 'FRAMEGEN') then
+    begin
+      if LineTrim <> 'External=true' then
+      begin
+        Lines[I] := 'External=true';
+        Modified := True;
+      end;
+    end;
+
+    // Ensure AmpereMfgUnlock=true under [DLSSG]
+    if (Pos('AmpereMfgUnlock=', LineTrim) = 1) and (CurrentSection = 'DLSSG') then
+    begin
+      if LineTrim <> 'AmpereMfgUnlock=true' then
+      begin
+        Lines[I] := 'AmpereMfgUnlock=true';
+        Modified := True;
+      end;
+    end;
+
+    NewLines[Count] := Lines[I];
+    Count := Count + 1;
   end;
+
   if Modified then
-    SaveStringsToFile(FilePath, Lines, False);
+  begin
+    SetArrayLength(NewLines, Count);
+    SaveStringsToFile(FilePath, NewLines, False);
+  end;
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);
@@ -167,7 +204,6 @@ begin
   if CurStep = ssPostInstall then
   begin
     IniPath := ExpandConstant('{app}\OptiScaler.ini');
-    SafeReplaceIniLine(IniPath, 'External=', 'External=true');
-    SafeReplaceIniLine(IniPath, 'AmpereMfgUnlock=', 'AmpereMfgUnlock=true');
+    CleanAndConfigureOptiScalerIni(IniPath);
   end;
 end;
