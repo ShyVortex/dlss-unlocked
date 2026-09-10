@@ -53,7 +53,7 @@ Name: mainfiles/dllversion; Description: Install as version.dll (alternative hoo
 Name: mainfiles/dllwinmm; Description: Install as winmm.dll (alternative hook); Types: custom; Flags: exclusive
 Name: mainfiles/asiversion; Description: Install as ASI plugin (in plugins/ folder); Types: custom; Flags: exclusive
 
-Name: core; Description: Install OptiScaler_DLSSNR core, upscaler and neural rendering components; Flags: fixed; Types: full custom
+Name: core; Description: Install OptiScaler-DLSSNR-PreSR-Multipass core, upscaler and neural rendering components; Flags: fixed; Types: full custom
 Name: streamline; Description: "NVIDIA Streamline 2.14.1 (recommended for DLSS 5 & MFG)"; Types: full custom; Flags: checkablealone
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
@@ -102,6 +102,7 @@ Source: "Dll version\libxess_dx11.dll"; DestDir: "{app}\OptiScaler"; Flags: igno
 Source: "Dll version\libxess_fg.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\libxell.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
 Source: "Dll version\D3D12Core.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvfp4\*"; DestDir: "{app}\OptiScaler\nvfp4"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; Signature check overrides and optional debug configs
 Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries

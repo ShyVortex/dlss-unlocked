@@ -1,9 +1,9 @@
-# DLSS-Unlocked OptiScaler_DLSSNR Build Script
-# This script downloads or extracts OptiScaler_DLSSNR releases and copies files to the build structure
+# DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script
+# This script downloads or extracts OptiScaler-DLSSNR-PreSR-Multipass releases and copies files to the build structure
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.2.0-dlssnr",
+    [string]$OptiScalerVersion = "v0.7.6",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip",
@@ -16,10 +16,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "DLSS-Unlocked OptiScaler_DLSSNR Build Script" -ForegroundColor Green
-Write-Host "===========================================" -ForegroundColor Green
+Write-Host "DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script" -ForegroundColor Green
+Write-Host "==========================================================" -ForegroundColor Green
 
-$Repo = "Dagherbou/OptiScaler_DLSSNR"
+$Repo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass"
 $TempDir = "temp_optiscaler"
 
 # Determine OptiScaler archive path or download
@@ -93,7 +93,7 @@ if (!(Test-Path $DllVersionDir)) {
     New-Item -ItemType Directory -Path $DllVersionDir | Out-Null
 }
 
-Write-Host "Copying OptiScaler_DLSSNR files to build structure..." -ForegroundColor Yellow
+Write-Host "Copying OptiScaler-DLSSNR-PreSR-Multipass files to build structure..." -ForegroundColor Yellow
 
 # Helper to find and copy file recursively
 function Copy-ExtractedFile {
@@ -139,6 +139,15 @@ Copy-ExtractedFile -Pattern "FidelityFX_LICENSE.md" -DestinationName "FidelityFX
 Copy-ExtractedFile -Pattern "FidelityFX_v2_LICENSE.md" -DestinationName "FidelityFX_v2_LICENSE.md"
 Copy-ExtractedFile -Pattern "DirectX_LICENSE.txt" -DestinationName "DirectX_LICENSE.txt"
 Copy-ExtractedFile -Pattern "RenoDX_ATTRIBUTION.txt" -DestinationName "RenoDX_ATTRIBUTION.txt"
+
+# Copy nvfp4 folder if present
+$foundNvfp4 = Get-ChildItem -Path $ExtractDir -Filter "nvfp4" -Recurse -Directory | Select-Object -First 1
+if ($foundNvfp4) {
+    $destNvfp4 = Join-Path $DllVersionDir "nvfp4"
+    if (Test-Path $destNvfp4) { Remove-Item -Path $destNvfp4 -Recurse -Force }
+    Copy-Item -Path $foundNvfp4.FullName -Destination $DllVersionDir -Recurse -Force
+    Write-Host "  nvfp4 -> $destNvfp4" -ForegroundColor Gray
+}
 
 # Handle NVIDIA Streamline download & extraction
 $StreamlineDir = Join-Path $DllVersionDir "streamline"
@@ -240,7 +249,7 @@ if ($PatchedDlssnrUrl) {
 }
 
 Write-Host ""
-Write-Host "OptiScaler_DLSSNR and Streamline files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler-DLSSNR-PreSR-Multipass and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize
@@ -386,6 +395,14 @@ if ($CreateStandaloneZip) {
         if (Test-Path "$DllVersionDir\$cDll") {
             Copy-Item -Path "$DllVersionDir\$cDll" -Destination $optiScalerSubDir -Force
         }
+    }
+
+    # Copy nvfp4 folder if present
+    if (Test-Path "$DllVersionDir\nvfp4") {
+        $destNvfp4 = Join-Path $optiScalerSubDir "nvfp4"
+        if (Test-Path $destNvfp4) { Remove-Item -Path $destNvfp4 -Recurse -Force }
+        Copy-Item -Path "$DllVersionDir\nvfp4" -Destination $optiScalerSubDir -Recurse -Force
+        Write-Host "  nvfp4 -> $destNvfp4" -ForegroundColor Gray
     }
 
     # Copy NVIDIA Streamline files
