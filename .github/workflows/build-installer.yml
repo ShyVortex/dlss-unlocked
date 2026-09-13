@@ -904,11 +904,12 @@ jobs:
             $iniHash = (Get-FileHash -Path $iniPath -Algorithm SHA256).Hash
             $noticesHash = (Get-FileHash -Path $noticesPath -Algorithm SHA256).Hash
             
-            $checksumContent = @"
-$dllHash *dlssg_sm86.dll
-$iniHash *dlssg_sm86.ini
-$noticesHash *THIRD_PARTY_NOTICES.txt
-"@
+            $checksumLines = @(
+                "$dllHash *dlssg_sm86.dll",
+                "$iniHash *dlssg_sm86.ini",
+                "$noticesHash *THIRD_PARTY_NOTICES.txt"
+            )
+            $checksumContent = $checksumLines -join "`r`n"
             Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
             Write-Host "Updated dlssg_sm86 files (Hash: $remoteHash)."
             Write-Host "Checksums:"
