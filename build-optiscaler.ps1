@@ -22,7 +22,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 
-$Repo = "wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass"
+$Repo = "ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass"
 $TempDir = "temp_optiscaler"
 
 # Determine OptiScaler archive path or download
@@ -38,8 +38,15 @@ if ($OptiScalerPath -eq "" -or $DownloadLatest) {
             $url = "https://api.github.com/repos/$Repo/releases/tags/$OptiScalerVersion"
             $release = Invoke-RestMethod -Uri $url -Headers $headers
         } else {
-            $url = "https://api.github.com/repos/$Repo/releases/latest"
-            $release = Invoke-RestMethod -Uri $url -Headers $headers
+            try {
+                $url = "https://api.github.com/repos/$Repo/releases/latest"
+                $release = Invoke-RestMethod -Uri $url -Headers $headers
+            } catch {
+                # Fallback to the latest available release (including pre-releases if latest tag is not set)
+                $url = "https://api.github.com/repos/$Repo/releases"
+                $releases = Invoke-RestMethod -Uri $url -Headers $headers
+                $release = $releases | Select-Object -First 1
+            }
         }
         
         $asset = $release.assets | Where-Object { 

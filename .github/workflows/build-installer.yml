@@ -50,7 +50,7 @@ permissions:
   actions: read
 
 env:
-  OPTISCALER_REPO: wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+  OPTISCALER_REPO: ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
   STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
@@ -104,7 +104,11 @@ jobs:
             } elseif ($tag -eq "latest" -or $tag -eq "stable") {
                 $url = "https://api.github.com/repos/$repo/releases"
                 $releases = Invoke-RestMethod -Uri $url -Headers $headers
-                return $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+                $rel = $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+                if (-not $rel) {
+                    $rel = $releases | Select-Object -First 1
+                }
+                return $rel
             } else {
                 $url = "https://api.github.com/repos/$repo/releases/tags/$tag"
                 return Invoke-RestMethod -Uri $url -Headers $headers
@@ -268,6 +272,12 @@ jobs:
             # Both releases fetched (Push, Schedule, or Auto Manual run)
             Write-Host "Fetching latest stable release..."
             $latestRel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag "latest"
+            if (-not $latestRel) {
+                $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
+                if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
+                $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+                $latestRel = $allRels | Select-Object -First 1
+            }
             if ($latestRel) {
                 $latestAsset = Get-AssetDownloadUrl -release $latestRel
                 $latestVersion = $latestRel.tag_name
@@ -440,6 +450,9 @@ jobs:
                 $targetRel = $releases | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
             } else {
                 $targetRel = $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+                if (-not $targetRel) {
+                    $targetRel = $releases | Select-Object -First 1
+                }
             }
             if ($targetRel) {
                 $targetAsset = $targetRel.assets | Where-Object { $_.name -match "OptiScaler.*\.zip$" -or $_.name -match "OptiScaler.*\.7z$" } | Select-Object -First 1
@@ -1286,7 +1299,8 @@ $noticesHash *THIRD_PARTY_NOTICES.txt
           - **NVIDIA GeForce RTX 40xx (Ada Lovelace)**: Fully supported; switch to Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via in-game overlay or `OptiScaler.ini`.
           
           ## 📜 Credits
-          - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+          - **OptiScaler DLSS-NR Pre-SR Multipass** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2): https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
+          - **OptiScaler DLSS-NR Pre-SR Multipass (Upstream)** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
           - **dlssg_for_sm86** by sdli1995: https://github.com/sdli1995/dlssg_for_sm86
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
