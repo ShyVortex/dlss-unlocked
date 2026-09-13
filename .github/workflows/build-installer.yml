@@ -100,13 +100,32 @@ jobs:
             if ($tag -eq "nightly") {
                 $url = "https://api.github.com/repos/$repo/releases"
                 $releases = Invoke-RestMethod -Uri $url -Headers $headers
-                return $releases | Where-Object { $_.prerelease -eq $true -and $_.tag_name -eq "nightly" } | Select-Object -First 1
+                $nightly = $releases | Where-Object { $_.prerelease -eq $true -and $_.tag_name -eq "nightly" } | Select-Object -First 1
+                if (-not $nightly) {
+                    $nightly = $releases | Where-Object { $_.prerelease -eq $true } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                }
+                return $nightly
             } elseif ($tag -eq "latest" -or $tag -eq "stable") {
+                try {
+                    $latestRel = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers $headers
+                    if ($latestRel -and $latestRel.tag_name) {
+                        return $latestRel
+                    }
+                } catch {}
                 $url = "https://api.github.com/repos/$repo/releases"
                 $releases = Invoke-RestMethod -Uri $url -Headers $headers
-                $rel = $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+                $rel = $releases | Where-Object { $_.prerelease -eq $false } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
                 if (-not $rel) {
-                    $rel = $releases | Select-Object -First 1
+                    $rel = $releases | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                }
+                if (-not $rel) {
+                    try {
+                        $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/tags" -Headers $headers
+                        if ($tags -and $tags.Count -gt 0) {
+                            $firstTag = $tags[0].name
+                            $rel = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$firstTag" -Headers $headers
+                        }
+                    } catch {}
                 }
                 return $rel
             } else {
@@ -276,7 +295,10 @@ jobs:
                 $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
                 if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
                 $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
-                $latestRel = $allRels | Select-Object -First 1
+                $latestRel = $allRels | Where-Object { $_.prerelease -eq $false } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                if (-not $latestRel) {
+                    $latestRel = $allRels | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                }
             }
             if ($latestRel) {
                 $latestAsset = Get-AssetDownloadUrl -release $latestRel
@@ -292,7 +314,7 @@ jobs:
                 $headers = @{ 'Accept' = 'application/vnd.github.v3+json'; 'User-Agent' = 'DLSS-Unlocked-Bot' }
                 if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "token $env:GITHUB_TOKEN" }
                 $allRels = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
-                $nightlyRel = $allRels | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+                $nightlyRel = $allRels | Where-Object { $_.prerelease -eq $true } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
             }
             if ($nightlyRel) {
                 $nightlyAsset = Get-AssetDownloadUrl -release $nightlyRel
@@ -444,14 +466,20 @@ jobs:
             if ($env:GITHUB_TOKEN) {
                 $headers['Authorization'] = "token $env:GITHUB_TOKEN"
             }
-            $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
             $targetRel = $null
             if ($buildType -eq "nightly") {
-                $targetRel = $releases | Where-Object { $_.prerelease -eq $true } | Select-Object -First 1
+                $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+                $targetRel = $releases | Where-Object { $_.prerelease -eq $true } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
             } else {
-                $targetRel = $releases | Where-Object { $_.prerelease -eq $false } | Select-Object -First 1
+                try {
+                    $targetRel = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases/latest" -Headers $headers
+                } catch {}
                 if (-not $targetRel) {
-                    $targetRel = $releases | Select-Object -First 1
+                    $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:OPTISCALER_REPO/releases" -Headers $headers
+                    $targetRel = $releases | Where-Object { $_.prerelease -eq $false } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                    if (-not $targetRel) {
+                        $targetRel = $releases | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                    }
                 }
             }
             if ($targetRel) {

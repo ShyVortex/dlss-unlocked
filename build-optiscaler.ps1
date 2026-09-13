@@ -45,7 +45,19 @@ if ($OptiScalerPath -eq "" -or $DownloadLatest) {
                 # Fallback to the latest available release (including pre-releases if latest tag is not set)
                 $url = "https://api.github.com/repos/$Repo/releases"
                 $releases = Invoke-RestMethod -Uri $url -Headers $headers
-                $release = $releases | Select-Object -First 1
+                $release = $releases | Where-Object { $_.prerelease -eq $false } | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                if (-not $release) {
+                    $release = $releases | Sort-Object -Property { [datetime]$_.published_at } -Descending | Select-Object -First 1
+                }
+                if (-not $release) {
+                    try {
+                        $tags = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/tags" -Headers $headers
+                        if ($tags -and $tags.Count -gt 0) {
+                            $firstTag = $tags[0].name
+                            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/tags/$firstTag" -Headers $headers
+                        }
+                    } catch {}
+                }
             }
         }
         
