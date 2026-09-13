@@ -277,42 +277,71 @@ if (!(Test-Path $DlssgSm86Dir)) {
 }
 
 $targetDlssgDll = Join-Path $DlssgSm86Dir "dlssg_sm86.dll"
-if (-not (Test-Path $targetDlssgDll) -and $DlssgSm86VersionDllUrl) {
-    Write-Host "Downloading dlssg_sm86.dll from $DlssgSm86VersionDllUrl..." -ForegroundColor Yellow
+$targetDlssgIni = Join-Path $DlssgSm86Dir "dlssg_sm86.ini"
+$targetDlssgNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
+$hashFile = Join-Path $DlssgSm86Dir ".commit_sha"
+$localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
+
+# Check remote hash from GitHub API or HEAD ETag
+$remoteHash = ""
+try {
+    $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/sdli1995/dlssg_for_sm86/commits/main" -Headers @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" } -TimeoutSec 10
+    if ($commit -and $commit.sha) {
+        $remoteHash = $commit.sha.Substring(0, 12)
+    }
+} catch {
+    # Fallback to ETag via HEAD request
+    try {
+        $headResp = Invoke-WebRequest -Uri $DlssgSm86VersionDllUrl -Method Head -UseBasicParsing -TimeoutSec 10
+        $etag = $headResp.Headers["ETag"]
+        if ($etag) {
+            $remoteHash = ($etag -replace '[^a-zA-Z0-9]', '').Substring(0, 12)
+        }
+    } catch {}
+}
+
+$needsDownload = (-not (Test-Path $targetDlssgDll)) -or
+                 (-not (Test-Path $targetDlssgIni)) -or
+                 (-not (Test-Path $targetDlssgNotices)) -or
+                 ($remoteHash -and ($localHash -ne $remoteHash))
+
+if ($needsDownload) {
+    if ($remoteHash -and $localHash -and ($localHash -ne $remoteHash)) {
+        Write-Host "New dlssg_for_sm86 version detected ($remoteHash vs local $localHash). Updating files..." -ForegroundColor Yellow
+    } else {
+        Write-Host "Downloading dlssg_for_sm86 files..." -ForegroundColor Yellow
+    }
+    
+    # Download dll
     try {
         Invoke-WebRequest -Uri $DlssgSm86VersionDllUrl -OutFile $targetDlssgDll -UseBasicParsing -TimeoutSec 300
         Write-Host "dlssg_sm86.dll downloaded to $targetDlssgDll" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download dlssg_sm86.dll: $($_.Exception.Message)" -ForegroundColor Yellow
     }
-} else {
-    Write-Host "dlssg_sm86.dll already present in dlssg_sm86 folder." -ForegroundColor Gray
-}
-
-$targetDlssgIni = Join-Path $DlssgSm86Dir "dlssg_sm86.ini"
-if (-not (Test-Path $targetDlssgIni) -and $DlssgSm86IniUrl) {
-    Write-Host "Downloading dlssg_sm86.ini from $DlssgSm86IniUrl..." -ForegroundColor Yellow
+    
+    # Download ini
     try {
         Invoke-WebRequest -Uri $DlssgSm86IniUrl -OutFile $targetDlssgIni -UseBasicParsing -TimeoutSec 300
         Write-Host "dlssg_sm86.ini downloaded to $targetDlssgIni" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download dlssg_sm86.ini: $($_.Exception.Message)" -ForegroundColor Yellow
     }
-} else {
-    Write-Host "dlssg_sm86.ini already present in dlssg_sm86 folder." -ForegroundColor Gray
-}
-
-$targetDlssgNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
-if (-not (Test-Path $targetDlssgNotices) -and $DlssgSm86NoticesUrl) {
-    Write-Host "Downloading THIRD_PARTY_NOTICES.txt from $DlssgSm86NoticesUrl..." -ForegroundColor Yellow
+    
+    # Download notices
     try {
         Invoke-WebRequest -Uri $DlssgSm86NoticesUrl -OutFile $targetDlssgNotices -UseBasicParsing -TimeoutSec 300
         Write-Host "dlssg_sm86 THIRD_PARTY_NOTICES.txt downloaded to $targetDlssgNotices" -ForegroundColor Green
     } catch {
         Write-Host "Warning: Could not download dlssg_sm86 THIRD_PARTY_NOTICES.txt: $($_.Exception.Message)" -ForegroundColor Yellow
     }
+    
+    if ($remoteHash) {
+        Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
+        Write-Host "Saved dlssg_sm86 hash ($remoteHash)." -ForegroundColor Gray
+    }
 } else {
-    Write-Host "dlssg_sm86 THIRD_PARTY_NOTICES.txt already present in dlssg_sm86 folder." -ForegroundColor Gray
+    Write-Host "dlssg_sm86 files are up to date ($localHash)." -ForegroundColor Gray
 }
 
 Write-Host ""

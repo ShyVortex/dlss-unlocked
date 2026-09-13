@@ -774,29 +774,98 @@ jobs:
             }
         }
 
+    - name: Check dlssg_for_sm86 remote version and hash
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      id: dlssg-check
+      shell: powershell
+      run: |
+        $repo = "sdli1995/dlssg_for_sm86"
+        $remoteHash = ""
+        $commitDate = ""
+        try {
+            $headers = @{
+                'Accept' = 'application/vnd.github.v3+json'
+                'User-Agent' = 'DLSS-Unlocked-CI'
+            }
+            if ($env:GITHUB_TOKEN) {
+                $headers['Authorization'] = "token $env:GITHUB_TOKEN"
+            }
+            $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/commits/main" -Headers $headers -TimeoutSec 15
+            if ($commit -and $commit.sha) {
+                $remoteHash = $commit.sha.Substring(0, 12)
+                $commitDate = $commit.commit.committer.date
+                Write-Host "Fetched dlssg_for_sm86 commit SHA: $remoteHash (Date: $commitDate)"
+            }
+        } catch {
+            Write-Warning "Could not fetch dlssg_for_sm86 commit SHA from GitHub API: $($_.Exception.Message)"
+        }
+        
+        # Fallback to ETag via HEAD request if API call fails
+        if (-not $remoteHash) {
+            try {
+                $headResp = Invoke-WebRequest -Uri "$env:DLSSG_SM86_VERSION_DLL_URL" -Method Head -UseBasicParsing -TimeoutSec 15
+                $etag = $headResp.Headers["ETag"]
+                if ($etag) {
+                    $cleanEtag = ($etag -replace '[^a-zA-Z0-9]', '')
+                    $remoteHash = $cleanEtag.Substring(0, [Math]::Min(12, $cleanEtag.Length))
+                    Write-Host "Fetched dlssg_for_sm86 ETag fallback: $remoteHash"
+                }
+            } catch {
+                Write-Warning "Could not fetch ETag: $($_.Exception.Message)"
+            }
+        }
+        
+        # Final fallback to timestamp
+        if (-not $remoteHash) {
+            $remoteHash = (Get-Date -Format "yyyyMMdd-HH")
+            Write-Host "Using timestamp fallback for dlssg_for_sm86: $remoteHash"
+        }
+        
+        Write-Host "dlssg_for_sm86 effective hash: $remoteHash"
+        "hash=$remoteHash" >> $env:GITHUB_OUTPUT
+
     - name: Cache dlssg_sm86 files
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       uses: actions/cache@v4
       id: cache-dlssg-sm86
       with:
         path: Dll version/dlssg_sm86
-        key: dlssg-sm86-v1
+        key: dlssg-sm86-v2-${{ steps.dlssg-check.outputs.hash }}
+        restore-keys: |
+          dlssg-sm86-v2-
 
     - name: Download and bundle dlssg_sm86 (Turing/Ampere MFG unlocker)
-      if: steps.cache-dlssg-sm86.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
         $dlssgDir = "Dll version\dlssg_sm86"
         if (-not (Test-Path $dlssgDir)) { New-Item -ItemType Directory -Path $dlssgDir -Force | Out-Null }
         
-        $filesToDownload = @(
-            @{ Url = "$env:DLSSG_SM86_VERSION_DLL_URL"; OutFile = "$dlssgDir\dlssg_sm86.dll"; Name = "dlssg_sm86.dll (renamed from version.dll)" },
-            @{ Url = "$env:DLSSG_SM86_INI_URL"; OutFile = "$dlssgDir\dlssg_sm86.ini"; Name = "dlssg_sm86.ini" },
-            @{ Url = "$env:DLSSG_SM86_NOTICES_URL"; OutFile = "$dlssgDir\THIRD_PARTY_NOTICES.txt"; Name = "THIRD_PARTY_NOTICES.txt" }
-        )
+        $remoteHash = "${{ steps.dlssg-check.outputs.hash }}"
+        $hashFile = Join-Path $dlssgDir ".commit_sha"
+        $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
         
-        foreach ($item in $filesToDownload) {
-            if (-not (Test-Path $item.OutFile)) {
+        $dllPath = Join-Path $dlssgDir "dlssg_sm86.dll"
+        $iniPath = Join-Path $dlssgDir "dlssg_sm86.ini"
+        $noticesPath = Join-Path $dlssgDir "THIRD_PARTY_NOTICES.txt"
+        
+        $cacheHit = "${{ steps.cache-dlssg-sm86.outputs.cache-hit }}" -eq "true"
+        $filesExist = (Test-Path $dllPath) -and (Test-Path $iniPath) -and (Test-Path $noticesPath)
+        $hashMatches = ($localHash -and $remoteHash -and ($localHash -eq $remoteHash))
+        
+        if ($cacheHit -and $filesExist -and $hashMatches) {
+            Write-Host "dlssg_sm86 files are verified up to date (hash: $localHash). Cache hit confirmed."
+        } else {
+            Write-Host "Cache invalid or update required: CacheHit=$cacheHit, FilesExist=$filesExist, LocalHash='$localHash', RemoteHash='$remoteHash'"
+            Write-Host "Downloading latest dlssg_sm86 files from sdli1995/dlssg_for_sm86..."
+            
+            $filesToDownload = @(
+                @{ Url = "$env:DLSSG_SM86_VERSION_DLL_URL"; OutFile = $dllPath; Name = "dlssg_sm86.dll (renamed from version.dll)" },
+                @{ Url = "$env:DLSSG_SM86_INI_URL"; OutFile = $iniPath; Name = "dlssg_sm86.ini" },
+                @{ Url = "$env:DLSSG_SM86_NOTICES_URL"; OutFile = $noticesPath; Name = "THIRD_PARTY_NOTICES.txt" }
+            )
+            
+            foreach ($item in $filesToDownload) {
                 Write-Host "Downloading $($item.Name) from $($item.Url)..."
                 $retries = 3
                 $downloaded = $false
@@ -814,9 +883,23 @@ jobs:
                 if (-not $downloaded) {
                     throw "Failed to download required dlssg_sm86 file: $($item.Name)"
                 }
-            } else {
-                Write-Host "$($item.Name) already present."
             }
+            
+            # Save remote hash and compute SHA256 checksums
+            Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
+            $dllHash = (Get-FileHash -Path $dllPath -Algorithm SHA256).Hash
+            $iniHash = (Get-FileHash -Path $iniPath -Algorithm SHA256).Hash
+            $noticesHash = (Get-FileHash -Path $noticesPath -Algorithm SHA256).Hash
+            
+            $checksumContent = @"
+$dllHash *dlssg_sm86.dll
+$iniHash *dlssg_sm86.ini
+$noticesHash *THIRD_PARTY_NOTICES.txt
+"@
+            Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
+            Write-Host "Updated dlssg_sm86 files (Hash: $remoteHash)."
+            Write-Host "Checksums:"
+            Write-Host $checksumContent
         }
 
     - name: Prepare release metadata
