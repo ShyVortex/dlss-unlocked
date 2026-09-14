@@ -113,7 +113,7 @@ Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignor
 Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
-Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll,NvLowLatencyVk.dll,nvngx_deepdvc.dll,sl.deepdvc.dll,sl.directsr.dll,sl.nis.dll,nis.license.txt,development\*"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
+Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "sl.nvperf.dll,NvLowLatencyVk.dll,nvngx_deepdvc.dll,sl.directsr.dll,sl.nis.dll,nis.license.txt,development\*"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
 
 ; 4. Licenses ({app}\Licenses)
 Source: "Licenses\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core

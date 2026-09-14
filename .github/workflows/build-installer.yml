@@ -647,7 +647,9 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14.1
+        key: streamline-2.14.1-v2
+        restore-keys: |
+          streamline-2.14.1-v2
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -699,7 +701,6 @@ jobs:
                 "sl.nvperf.dll",
                 "NvLowLatencyVk.dll",
                 "nvngx_deepdvc.dll",
-                "sl.deepdvc.dll",
                 "sl.directsr.dll",
                 "sl.nis.dll",
                 "nis.license.txt"
@@ -761,7 +762,7 @@ jobs:
         }
         
         # Validate that all required Streamline and DLSS-NR files exist before caching
-        $requiredFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
+        $requiredFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.deepdvc.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
         $missingFiles = @()
         foreach ($rf in $requiredFiles) {
             $rfPath = Join-Path $streamlineDir $rf

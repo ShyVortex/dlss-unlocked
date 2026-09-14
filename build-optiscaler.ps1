@@ -213,7 +213,6 @@ if (Test-Path $tempStreamlineExtractDir) {
         "sl.nvperf.dll",
         "NvLowLatencyVk.dll",
         "nvngx_deepdvc.dll",
-        "sl.deepdvc.dll",
         "sl.directsr.dll",
         "sl.nis.dll",
         "nis.license.txt"
@@ -263,7 +262,7 @@ if ($StreamlineDlssNrUrl) {
 }
 
 # Validate that all required Streamline files exist
-$requiredStreamlineFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
+$requiredStreamlineFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.deepdvc.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
 $missingStreamlineFiles = @()
 foreach ($rf in $requiredStreamlineFiles) {
     $rfPath = Join-Path $StreamlineDir $rf
@@ -274,7 +273,7 @@ foreach ($rf in $requiredStreamlineFiles) {
 if ($missingStreamlineFiles.Count -gt 0) {
     Write-Warning "Streamline validation warning: Missing files in ${StreamlineDir}: $($missingStreamlineFiles -join ', ')"
 } else {
-    Write-Host "Streamline files verified (including sl.interposer.dll and sl.dlss_nr.dll)" -ForegroundColor Green
+    Write-Host "Streamline files verified (including sl.interposer.dll, sl.deepdvc.dll, and sl.dlss_nr.dll)" -ForegroundColor Green
 }
 
 # Download patched nvngx_dlssnr.dll to root build directory
