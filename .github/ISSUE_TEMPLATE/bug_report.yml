@@ -40,7 +40,6 @@ body:
       options:
         - "GitHub Release - Installer (Setup .exe)"
         - "GitHub Release - Standalone Package (.zip)"
-        - "NexusMods - Installer (Setup .exe)"
         - "NexusMods - Standalone Package (.zip)"
         - "Custom / Built from source"
     validations:
