@@ -647,9 +647,9 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14.1-v2
+        key: streamline-2.14.1-v3
         restore-keys: |
-          streamline-2.14.1-v2
+          streamline-2.14.1-v3
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -697,19 +697,8 @@ jobs:
                 if ($foundX64) { $binX64Dir = $foundX64.FullName } else { $binX64Dir = $tempExtract }
             }
 
-            $excludedStreamlineFiles = @(
-                "sl.nvperf.dll",
-                "NvLowLatencyVk.dll",
-                "nvngx_deepdvc.dll",
-                "sl.directsr.dll",
-                "sl.nis.dll",
-                "nis.license.txt"
-            )
-
-            # Copy files directly from bin/x64 into $streamlineDir (excluding development folder and unwanted DLLs)
-            Get-ChildItem -Path $binX64Dir -File | Where-Object {
-                $excludedStreamlineFiles -notcontains $_.Name
-            } | ForEach-Object {
+            # Copy all files directly from bin/x64 into $streamlineDir without excluding any DLLs
+            Get-ChildItem -Path $binX64Dir -File | ForEach-Object {
                 Copy-Item -Path $_.FullName -Destination $streamlineDir -Force
                 Write-Host "  Streamline file: $($_.Name)"
             }
@@ -1169,7 +1158,7 @@ jobs:
         $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
         New-Item -ItemType Directory -Path $streamlineSubDir -Force | Out-Null
         if (Test-Path "Dll version\streamline") {
-            Get-ChildItem -Path "Dll version\streamline" | Where-Object { $_.Name -ne "sl.nvperf.dll" } | ForEach-Object {
+            Get-ChildItem -Path "Dll version\streamline" | ForEach-Object {
                 Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
             }
             Write-Host "Copied NVIDIA Streamline files to standalone archive OptiScaler/streamline"

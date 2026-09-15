@@ -209,19 +209,8 @@ if (Test-Path $tempStreamlineExtractDir) {
         if ($foundX64) { $binX64Dir = $foundX64.FullName } else { $binX64Dir = $tempStreamlineExtractDir }
     }
 
-    $excludedStreamlineFiles = @(
-        "sl.nvperf.dll",
-        "NvLowLatencyVk.dll",
-        "nvngx_deepdvc.dll",
-        "sl.directsr.dll",
-        "sl.nis.dll",
-        "nis.license.txt"
-    )
-
-    # Copy files directly from bin/x64 into $StreamlineDir (excluding development folder and unwanted DLLs)
-    Get-ChildItem -Path $binX64Dir -File | Where-Object {
-        $excludedStreamlineFiles -notcontains $_.Name
-    } | ForEach-Object {
+    # Copy all files directly from bin/x64 into $StreamlineDir without exclusions
+    Get-ChildItem -Path $binX64Dir -File | ForEach-Object {
         Copy-Item -Path $_.FullName -Destination $StreamlineDir -Force
         Write-Host "  Streamline file: $($_.Name)" -ForegroundColor Gray
     }
@@ -481,7 +470,7 @@ if ($CreateStandaloneZip) {
     $streamlineSubDir = Join-Path $optiScalerSubDir "streamline"
     New-Item -ItemType Directory -Path $streamlineSubDir | Out-Null
     if (Test-Path "$DllVersionDir\streamline") {
-        Get-ChildItem -Path "$DllVersionDir\streamline" | Where-Object { $_.Name -ne "sl.nvperf.dll" } | ForEach-Object {
+        Get-ChildItem -Path "$DllVersionDir\streamline" | ForEach-Object {
             Copy-Item -Path $_.FullName -Destination $streamlineSubDir -Recurse -Force
         }
         Write-Host "  NVIDIA Streamline -> $streamlineSubDir" -ForegroundColor Gray
