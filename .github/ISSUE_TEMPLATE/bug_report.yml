@@ -1,0 +1,144 @@
+name: "🐛 Bug Report"
+description: "Report a bug, crash, or unexpected behaviour with DLSS Unlocked."
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting an issue! Please fill out **all required sections** below.
+        > ⚠️ **Incomplete issues that do not follow this template or lack diagnostic logs will be closed.**
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 1. Operating System
+      description: Select the operating system you are running the game on.
+      options:
+        - "Windows 11"
+        - "Windows 10"
+        - "Linux (Steam / Proton)"
+        - "Linux (Heroic / Lutris / Wine)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: gpu_driver
+    attributes:
+      label: 2. GPU Model and Driver / Proton Version
+      description: Specify your exact GPU and graphics driver version (and Proton version if on Linux).
+      placeholder: "e.g., RTX 3080 10GB, NVIDIA Driver 572.16 (Proton Experimental / GE-Proton 9-20)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: source
+    attributes:
+      label: 3. DLSS Unlocked Distribution Source
+      description: Where did you download DLSS Unlocked from and which package format did you use?
+      options:
+        - "GitHub Release - Installer (Setup .exe)"
+        - "GitHub Release - Standalone Package (.zip)"
+        - "NexusMods - Installer (Setup .exe)"
+        - "NexusMods - Standalone Package (.zip)"
+        - "Custom / Built from source"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 4. DLSS Unlocked & OptiScaler Version
+      description: Which version of DLSS Unlocked and OptiScaler are you running?
+      placeholder: "e.g., DLSS Unlocked NR-v0.8.3 / OptiScaler v0.8.3-sm86"
+    validations:
+      required: true
+
+  - type: input
+    id: game
+    attributes:
+      label: 5. Game Name and Platform
+      description: Which game is affected and on which store/launcher platform?
+      placeholder: "e.g., Cyberpunk 2077 (Steam), A Plague Tale: Requiem (Xbox Game Pass), The Witcher 3 (GOG)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 6. Description of the Issue
+      description: Provide a clear and concise description of the problem.
+      placeholder: "Explain what happens in detail..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 7. Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Launch the game with DLSS Unlocked installed.
+        2. Go to Graphics / Display settings.
+        3. Enable DLSS Frame Generation / MFG.
+        4. See crash or freeze at...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual_behaviour
+    attributes:
+      label: 8. Actual Behaviour
+      description: What is currently happening?
+      placeholder: "e.g., The game crashes to desktop upon enabling Frame Generation, or the frame rate does not change."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected_behaviour
+    attributes:
+      label: 9. Expected Behaviour
+      description: What should happen instead?
+      placeholder: "e.g., Frame generation should activate smoothly without crashing and double/multiply framerate."
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 10. OptiScaler Logs & Configuration (OptiScaler.log and OptiScaler.ini)
+      description: |
+        Please paste the contents of `OptiScaler.log` and your `OptiScaler.ini` below (or drag and drop the log files).
+        On Linux, if the game crashes, also include relevant `PROTON_LOG=1` output.
+      placeholder: |
+        ```text
+        --- Paste OptiScaler.log here ---
+        ```
+
+        ```ini
+        --- Paste OptiScaler.ini here ---
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: 11. Additional Context
+      description: Add any other context, launch options (e.g. `WINEDLLOVERRIDES="dxgi=n,b"`), screenshots, or recordings.
+      placeholder: "Any other relevant information..."
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: "I have confirmed this issue is reproducible on the latest DLSS Unlocked version."
+          required: true
+        - label: "I have attached or pasted the required `OptiScaler.log` and `OptiScaler.ini`."
+          required: true
+        - label: "I understand that issues missing required diagnostic information will be rejected and closed."
+          required: true
