@@ -74,10 +74,34 @@ if ($OptiScalerPath -eq "" -or $DownloadLatest) {
             New-Item -ItemType Directory -Path $TempDir | Out-Null
         }
 
+        # Determine asset hash (SHA-256 digest or updated_at_id fallback)
+        $remoteAssetHash = ""
+        if ($asset.PSObject.Properties['digest'] -and $asset.digest) {
+            $remoteAssetHash = ($asset.digest -replace '^sha256:', '').Substring(0, [math]::Min(16, ($asset.digest -replace '^sha256:', '').Length))
+        } elseif ($asset.PSObject.Properties['updated_at'] -and $asset.updated_at) {
+            $remoteAssetHash = "$($asset.updated_at)_$($asset.id)"
+        }
+
         $OptiScalerPath = Join-Path $TempDir $asset.name
-        Write-Host "Downloading $($asset.name) from $($asset.browser_download_url)..." -ForegroundColor Yellow
-        Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $OptiScalerPath -UseBasicParsing
-        Write-Host "Download complete: $OptiScalerPath" -ForegroundColor Green
+        $hashFile = Join-Path $TempDir ".optiscaler_hash"
+        $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
+
+        $needsOptiDownload = (-not (Test-Path $OptiScalerPath)) -or ($remoteAssetHash -and ($localHash -ne $remoteAssetHash)) -or $DownloadLatest
+
+        if ($needsOptiDownload) {
+            if ($remoteAssetHash -and $localHash -and ($localHash -ne $remoteAssetHash)) {
+                Write-Host "New OptiScaler asset version detected ($remoteAssetHash vs local $localHash). Updating archive..." -ForegroundColor Yellow
+            } else {
+                Write-Host "Downloading $($asset.name) from $($asset.browser_download_url)..." -ForegroundColor Yellow
+            }
+            Invoke-WebRequest -Uri $asset.browser_download_url -OutFile $OptiScalerPath -UseBasicParsing
+            Write-Host "Download complete: $OptiScalerPath" -ForegroundColor Green
+            if ($remoteAssetHash) {
+                Set-Content -Path $hashFile -Value $remoteAssetHash -Encoding ASCII
+            }
+        } else {
+            Write-Host "OptiScaler archive is up to date ($localHash). Using cached $OptiScalerPath." -ForegroundColor Green
+        }
     } catch {
         Write-Host "Failed to download from GitHub API: $($_.Exception.Message)" -ForegroundColor Yellow
         if ($OptiScalerPath -eq "" -or !(Test-Path $OptiScalerPath)) {
@@ -173,6 +197,12 @@ if ($foundNvfp4) {
     if (Test-Path $destNvfp4) { Remove-Item -Path $destNvfp4 -Recurse -Force }
     Copy-Item -Path $foundNvfp4.FullName -Destination $DllVersionDir -Recurse -Force
     Write-Host "  nvfp4 -> $destNvfp4" -ForegroundColor Gray
+}
+
+# Save OptiScaler hash file in build directory
+$optiHashToSave = if ($remoteAssetHash) { $remoteAssetHash } else { $localHash }
+if ($optiHashToSave) {
+    Set-Content -Path (Join-Path $DllVersionDir ".optiscaler_hash") -Value $optiHashToSave -Encoding ASCII
 }
 
 # Handle NVIDIA Streamline download & extraction

@@ -69,9 +69,11 @@ jobs:
       nightly_version: ${{ steps.version_check.outputs.nightly_version }}
       nightly_download_url: ${{ steps.version_check.outputs.nightly_download_url }}
       nightly_filename: ${{ steps.version_check.outputs.nightly_filename }}
+      nightly_hash: ${{ steps.version_check.outputs.nightly_hash }}
       latest_version: ${{ steps.version_check.outputs.latest_version }}
       latest_download_url: ${{ steps.version_check.outputs.latest_download_url }}
       latest_filename: ${{ steps.version_check.outputs.latest_filename }}
+      latest_hash: ${{ steps.version_check.outputs.latest_hash }}
       custom_tag: ${{ steps.version_check.outputs.custom_tag }}
       custom_release_type: ${{ steps.version_check.outputs.custom_release_type }}
       should_release: ${{ steps.version_check.outputs.should_release }}
@@ -142,13 +144,37 @@ jobs:
             
             if (-not $asset) {
                 Write-Error "Could not find OptiScaler zip/7z asset in release $($release.tag_name)"
-                return @{ url = $null; filename = $null }
+                return @{ url = $null; filename = $null; hash = $null }
             }
-            return @{ url = $asset.browser_download_url; filename = $asset.name }
+            
+            # Extract SHA256 digest or fallback to ETag / updated_at
+            $hash = ""
+            if ($asset.digest -and $asset.digest -match 'sha256:([a-fA-F0-9]+)') {
+                $hash = $matches[1].Substring(0, [Math]::Min(16, $matches[1].Length))
+            }
+            if (-not $hash -and $asset.browser_download_url) {
+                try {
+                    $headResp = Invoke-WebRequest -Uri $asset.browser_download_url -Method Head -UseBasicParsing -TimeoutSec 15
+                    $etag = $headResp.Headers["ETag"]
+                    if ($etag) {
+                        $cleanEtag = ($etag -replace '[^a-zA-Z0-9]', '')
+                        $hash = $cleanEtag.Substring(0, [Math]::Min(16, $cleanEtag.Length))
+                    }
+                } catch {}
+            }
+            if (-not $hash) {
+                if ($asset.updated_at) {
+                    $cleanDate = ($asset.updated_at -replace '[^0-9]', '')
+                    $hash = "$($cleanDate)_$($asset.id)"
+                } else {
+                    $hash = "$($asset.id)_$($asset.size)"
+                }
+            }
+            return @{ url = $asset.browser_download_url; filename = $asset.name; hash = $hash }
         }
 
         function Check-ExistingBuild {
-            param($tag, $filename)
+            param($tag, $filename, $assetHash)
             try {
                 $headers = @{
                     'Accept' = 'application/vnd.github.v3+json'
@@ -172,6 +198,16 @@ jobs:
 
                 if ($existingRelease) {
                     Write-Host "Found existing release in ${{ github.repository }} (tag: '$($existingRelease.tag_name)', title: '$($existingRelease.name)')"
+                    if ($assetHash -and $assetHash.Trim() -ne "") {
+                        $shortHash = if ($assetHash.Length -gt 16) { $assetHash.Substring(0, 16) } else { $assetHash }
+                        if ($existingRelease.body -and $existingRelease.body -match [regex]::Escape($shortHash)) {
+                            Write-Host "Existing release matches upstream OptiScaler hash ($shortHash). Up to date."
+                            return $true
+                        } else {
+                            Write-Host "Existing release OptiScaler hash differs or is missing (Upstream: '$shortHash'). Rebuild needed!"
+                            return $false
+                        }
+                    }
                     return $true
                 }
                 return $false
@@ -205,9 +241,11 @@ jobs:
         $nightlyVersion = ""
         $nightlyDownloadUrl = ""
         $nightlyFilename = ""
+        $nightlyHash = ""
         $latestVersion = ""
         $latestDownloadUrl = ""
         $latestFilename = ""
+        $latestHash = ""
 
         Write-Host "Event: ${{ github.event_name }}"
         Write-Host "Manual run: $isManualRun"
@@ -243,16 +281,18 @@ jobs:
                     $nightlyVersion = $rel.tag_name
                     $nightlyDownloadUrl = $assetInfo.url
                     $nightlyFilename = $assetInfo.filename
+                    $nightlyHash = $assetInfo.hash
                     $shouldBuildNightly = ($assetInfo.url -ne "")
                     $shouldBuildLatest = $false
-                    Write-Host "Assigned $specificVersion to nightly/prerelease build pipeline (URL: $($assetInfo.url))"
+                    Write-Host "Assigned $specificVersion to nightly/prerelease build pipeline (URL: $($assetInfo.url), Hash: $nightlyHash)"
                 } else {
                     $latestVersion = $rel.tag_name
                     $latestDownloadUrl = $assetInfo.url
                     $latestFilename = $assetInfo.filename
+                    $latestHash = $assetInfo.hash
                     $shouldBuildLatest = ($assetInfo.url -ne "")
                     $shouldBuildNightly = $false
-                    Write-Host "Assigned $specificVersion to latest/stable build pipeline (URL: $($assetInfo.url))"
+                    Write-Host "Assigned $specificVersion to latest/stable build pipeline (URL: $($assetInfo.url), Hash: $latestHash)"
                 }
             } else {
                 Write-Error "Could not find release for tag: $specificVersion"
@@ -271,9 +311,10 @@ jobs:
                 $nightlyVersion = $nightlyRel.tag_name
                 $nightlyDownloadUrl = $nightlyAsset.url
                 $nightlyFilename = $nightlyAsset.filename
+                $nightlyHash = $nightlyAsset.hash
                 $shouldBuildNightly = ($nightlyAsset.url -ne "")
                 $shouldBuildLatest = $false
-                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename)"
+                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename, Hash: $nightlyHash)"
             }
         } elseif ($specificVersion -eq "latest") {
             Write-Host "Fetching latest stable release..."
@@ -283,9 +324,10 @@ jobs:
                 $latestVersion = $latestRel.tag_name
                 $latestDownloadUrl = $latestAsset.url
                 $latestFilename = $latestAsset.filename
+                $latestHash = $latestAsset.hash
                 $shouldBuildLatest = ($latestAsset.url -ne "")
                 $shouldBuildNightly = $false
-                Write-Host "Latest stable release: $latestVersion ($latestFilename)"
+                Write-Host "Latest stable release: $latestVersion ($latestFilename, Hash: $latestHash)"
             }
         } else {
             # Both releases fetched (Push, Schedule, or Auto Manual run)
@@ -305,7 +347,8 @@ jobs:
                 $latestVersion = $latestRel.tag_name
                 $latestDownloadUrl = $latestAsset.url
                 $latestFilename = $latestAsset.filename
-                Write-Host "Latest stable release: $latestVersion ($latestFilename)"
+                $latestHash = $latestAsset.hash
+                Write-Host "Latest stable release: $latestVersion ($latestFilename, Hash: $latestHash)"
             }
 
             Write-Host "Fetching nightly/prerelease..."
@@ -321,7 +364,8 @@ jobs:
                 $nightlyVersion = $nightlyRel.tag_name
                 $nightlyDownloadUrl = $nightlyAsset.url
                 $nightlyFilename = $nightlyAsset.filename
-                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename)"
+                $nightlyHash = $nightlyAsset.hash
+                Write-Host "Nightly release: $nightlyVersion ($nightlyFilename, Hash: $nightlyHash)"
             }
 
             if ($isPushRun) {
@@ -355,21 +399,21 @@ jobs:
                     $shouldBuildLatest = ($latestDownloadUrl -ne "")
                 } else {
                     if ($nightlyVersion -and $nightlyFilename) {
-                        $hasNightly = Check-ExistingBuild -tag $nightlyVersion -filename $nightlyFilename
+                        $hasNightly = Check-ExistingBuild -tag $nightlyVersion -filename $nightlyFilename -assetHash $nightlyHash
                         if (-not $hasNightly) {
                             $shouldBuildNightly = $true
-                            Write-Host "New nightly release detected: $nightlyVersion ($nightlyFilename)"
+                            Write-Host "New or updated nightly release detected: $nightlyVersion ($nightlyFilename, Hash: $nightlyHash)"
                         } else {
-                            Write-Host "Nightly release $nightlyVersion already exists in repository."
+                            Write-Host "Nightly release $nightlyVersion already exists in repository with matching hash."
                         }
                     }
                     if ($latestVersion -and $latestFilename) {
-                        $hasLatest = Check-ExistingBuild -tag $latestVersion -filename $latestFilename
+                        $hasLatest = Check-ExistingBuild -tag $latestVersion -filename $latestFilename -assetHash $latestHash
                         if (-not $hasLatest) {
                             $shouldBuildLatest = $true
-                            Write-Host "New latest release detected: $latestVersion ($latestFilename)"
+                            Write-Host "New or updated latest release detected: $latestVersion ($latestFilename, Hash: $latestHash)"
                         } else {
-                            Write-Host "Latest release $latestVersion already exists in repository."
+                            Write-Host "Latest release $latestVersion already exists in repository with matching hash."
                         }
                     }
                 }
@@ -381,9 +425,11 @@ jobs:
         echo "nightly_version=$nightlyVersion" >> $env:GITHUB_OUTPUT
         echo "nightly_download_url=$nightlyDownloadUrl" >> $env:GITHUB_OUTPUT
         echo "nightly_filename=$nightlyFilename" >> $env:GITHUB_OUTPUT
+        echo "nightly_hash=$nightlyHash" >> $env:GITHUB_OUTPUT
         echo "latest_version=$latestVersion" >> $env:GITHUB_OUTPUT
         echo "latest_download_url=$latestDownloadUrl" >> $env:GITHUB_OUTPUT
         echo "latest_filename=$latestFilename" >> $env:GITHUB_OUTPUT
+        echo "latest_hash=$latestHash" >> $env:GITHUB_OUTPUT
         echo "custom_tag=$customTag" >> $env:GITHUB_OUTPUT
         echo "custom_release_type=$customReleaseType" >> $env:GITHUB_OUTPUT
         echo "should_release=$($shouldRelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
@@ -426,6 +472,7 @@ jobs:
       id: cache-optiscaler
       with:
         path: |
+          Dll version/.optiscaler_hash
           Dll version/dlss-unlocked-upscaler.dll
           Dll version/OptiScaler.dll
           Dll version/nvngx.dll_dlssnr.dll
@@ -443,18 +490,38 @@ jobs:
           Dll version/nvfp4
           DLLSG mod/DisableNvidiaSignatureChecks.reg
           DLLSG mod/RestoreNvidiaSignatureChecks.reg
-        key: optiscaler-v3-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ hashFiles('Dll version/nvngx.ini') }}
+        key: optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-${{ hashFiles('Dll version/nvngx.ini') }}
         restore-keys: |
-          optiscaler-v3-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
-          optiscaler-v3-
+          optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-
+          optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
+          optiscaler-v4-
 
     - name: Download and extract OptiScaler-DLSSNR-PreSR-Multipass
-      if: steps.cache-optiscaler.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
         $downloadUrl = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_download_url || needs.check-versions.outputs.latest_download_url }}"
         $version = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         $buildType = "${{ matrix.build_type }}"
+        $targetHash = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}"
+        $hashFile = "Dll version\.optiscaler_hash"
+        $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
+        $cacheHit = "${{ steps.cache-optiscaler.outputs.cache-hit }}" -eq 'true'
+        $mainBinaryExists = Test-Path "Dll version\dlss-unlocked-upscaler.dll"
+
+        # Check if cache is fully valid and matches hash
+        $hashMatches = (-not $targetHash) -or ($localHash -eq $targetHash)
+        if ($cacheHit -and $mainBinaryExists -and $hashMatches) {
+            Write-Host "OptiScaler binaries restored from cache and match hash ($localHash). Skipping download."
+            if (Test-Path "Dll version\OptiScaler.ini.template") {
+                Copy-Item -Path "Dll version\OptiScaler.ini.template" -Destination "Dll version\OptiScaler.ini" -Force
+            }
+            exit 0
+        }
+
+        if ($cacheHit -and -not $hashMatches) {
+            Write-Host "Cache hit but OptiScaler hash changed ($localHash vs expected $targetHash). Forcing re-download." -ForegroundColor Yellow
+        }
         
         # Self-healing fallback if download URL wasn't passed via outputs
         if (-not $downloadUrl -or $downloadUrl.Trim() -eq "") {
@@ -487,7 +554,14 @@ jobs:
                 if ($targetAsset) {
                     $downloadUrl = $targetAsset.browser_download_url
                     $version = $targetRel.tag_name
-                    Write-Host "Found OptiScaler release asset: $($targetAsset.name) at $downloadUrl"
+                    if (-not $targetHash -or $targetHash.Trim() -eq "") {
+                        if ($targetAsset.PSObject.Properties['digest'] -and $targetAsset.digest) {
+                            $targetHash = ($targetAsset.digest -replace '^sha256:', '').Substring(0, [math]::Min(16, ($targetAsset.digest -replace '^sha256:', '').Length))
+                        } elseif ($targetAsset.PSObject.Properties['updated_at'] -and $targetAsset.updated_at) {
+                            $targetHash = "$($targetAsset.updated_at)_$($targetAsset.id)"
+                        }
+                    }
+                    Write-Host "Found OptiScaler release asset: $($targetAsset.name) at $downloadUrl (Hash: $targetHash)"
                 }
             }
         }
@@ -639,6 +713,12 @@ jobs:
             } else {
                 Write-Warning "[MISSING] $file"
             }
+        }
+
+        # Save hash file for future cache verification
+        if ($targetHash) {
+            Set-Content -Path $hashFile -Value $targetHash -Encoding ASCII
+            Write-Host "Saved OptiScaler asset hash ($targetHash) to $hashFile"
         }
 
     - name: Cache NVIDIA Streamline
@@ -1311,7 +1391,9 @@ jobs:
           - **Release Type**: ${{ steps.release_meta.outputs.display_type }}
           - **OptiScaler Backend**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }} (${{ matrix.build_type }})
           - **Package**: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}
+          - **OptiScaler Asset Hash**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}`
           - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
+          <!-- optiscaler_hash: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }} -->
           
           ## 🎮 Supported GPUs
           - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere)**: Enabled by default with hardware-accelerated native DLSS MFG (`dlssg_sm86`).
