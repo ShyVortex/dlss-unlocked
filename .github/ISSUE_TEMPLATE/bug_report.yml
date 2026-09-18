@@ -8,12 +8,14 @@ body:
       value: |
         Thank you for reporting an issue! Please fill out **all required sections** below.
         > ⚠️ **Incomplete issues that do not follow this template or lack diagnostic logs will be closed.**
+        >
+        > 🐧 **Linux / Proton Users**: If reporting an issue on Linux, you **must** use the `PROTON_LOG=1` launch option in Steam and upload the resulting Proton log generated in your user's home folder (`~/steam-<appid>.log`).
 
   - type: dropdown
     id: os
     attributes:
       label: 1. Operating System
-      description: Select the operating system you are running the game on.
+      description: "Select the operating system you are running the game on. Note: For Linux issues, 'PROTON_LOG=1' must be used and the Proton log from your home folder must be uploaded."
       options:
         - "Windows 11"
         - "Windows 10"
@@ -106,10 +108,12 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: 10. OptiScaler Logs & Configuration (OptiScaler.log and OptiScaler.ini)
+      label: 10. Diagnostic Logs & Configuration (OptiScaler.log, OptiScaler.ini, and Proton Log)
       description: |
-        Please paste the contents of `OptiScaler.log` and your `OptiScaler.ini` below (or drag and drop the log files).
-        On Linux, if the game crashes, also include relevant `PROTON_LOG=1` output.
+        Please paste the contents of `OptiScaler.log` and your `OptiScaler.ini` below (or drag and drop the files).
+        
+        🐧 **Linux / Proton Requirement**:
+        If you are on Linux, you **must** use the `PROTON_LOG=1` launch option when running the game (e.g. `PROTON_LOG=1 %command%`) and upload or paste the Proton log generated in your user home folder (`~/steam-<appid>.log`).
       placeholder: |
         ```text
         --- Paste OptiScaler.log here ---
@@ -118,14 +122,18 @@ body:
         ```ini
         --- Paste OptiScaler.ini here ---
         ```
+
+        ```text
+        --- For Linux: Paste or drag and drop Proton log (~/steam-<appid>.log) here ---
+        ```
     validations:
       required: true
 
   - type: textarea
     id: additional_context
     attributes:
-      label: 11. Additional Context
-      description: Add any other context, launch options (e.g. `WINEDLLOVERRIDES="dxgi=n,b"`), screenshots, or recordings.
+      label: 11. Additional Context & Launch Options
+      description: Add any other context, complete Steam/Proton launch options (e.g. `PROTON_LOG=1 WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%`), screenshots, or recordings.
       placeholder: "Any other relevant information..."
     validations:
       required: false
@@ -139,5 +147,7 @@ body:
           required: true
         - label: "I have attached or pasted the required `OptiScaler.log` and `OptiScaler.ini`."
           required: true
+        - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."
+          required: false
         - label: "I understand that issues missing required diagnostic information will be rejected and closed."
           required: true
