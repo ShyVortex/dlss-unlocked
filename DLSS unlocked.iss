@@ -66,64 +66,64 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
 ; 1. Root files ({app}): Proxy DLL, OptiScaler.ini, nvngx.dll_dlssnr.dll
-Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllversion
-Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllversion
-Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllversion
+Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllversion
+Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllversion
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "version.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllversion
 
-Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllwinmm
-Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllwinmm
-Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dllwinmm
+Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllwinmm
+Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllwinmm
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "winmm.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dllwinmm
 
-Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dlldxgi
-Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dlldxgi
-Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/dlldxgi
+Source: "Dll version\OptiScaler.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dlldxgi
+Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dlldxgi
+Source: "Dll version\version.dll"; DestDir: "{app}"; DestName: "dxgi.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/dlldxgi
 
-Source: "Dll version\OptiScaler.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/asiversion
-Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/asiversion
-Source: "Dll version\version.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: confirmoverwrite skipifsourcedoesntexist; Components: mainfiles/asiversion
+Source: "Dll version\OptiScaler.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/asiversion
+Source: "Dll version\dlss-unlocked-upscaler.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/asiversion
+Source: "Dll version\version.dll"; DestDir: "{app}\plugins"; DestName: "dlss-unlocked.asi"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: mainfiles/asiversion
 
-Source: "Dll version\OptiScaler.ini"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\nvngx.dll_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\nvngx_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\OptiScaler.ini"; DestDir: "{app}"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvngx.dll_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvngx_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 
 ; 2. OptiScaler subdirectory files ({app}\OptiScaler): DLSS Enabler Headless (MFG), DLSSG mod, upscalers, companion DLLs
-Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}\OptiScaler"; DestName: "dlss-enabler-headless.dll"; Flags: confirmoverwrite; Components: core
-Source: "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\nvngx.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}\OptiScaler"; DestName: "dlss-enabler-headless.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvngx.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 
 ; Upscaler and runtime companion DLLs
-Source: "Dll version\amd_fidelityfx_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\amd_fidelityfx_framegeneration_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\amd_fidelityfx_loader_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\amd_fidelityfx_upscaler_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\amd_fidelityfx_vk.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\libxess.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\libxess_dx11.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\libxess_fg.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\libxell.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\D3D12Core.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\nvfp4\*"; DestDir: "{app}\OptiScaler\nvfp4"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
+Source: "Dll version\amd_fidelityfx_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\amd_fidelityfx_framegeneration_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\amd_fidelityfx_loader_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\amd_fidelityfx_upscaler_dx12.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\amd_fidelityfx_vk.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\libxess.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\libxess_dx11.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\libxess_fg.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\libxell.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\D3D12Core.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvfp4\*"; DestDir: "{app}\OptiScaler\nvfp4"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; Signature check overrides and optional debug configs
-Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries
-Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: core optional/regentries
-Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion skipifsourcedoesntexist; Components: optional/fgdebug
+Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core optional/regentries
+Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core optional/regentries
+Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: optional/fgdebug
 
 ; Native Turing/Ampere MFG unlocker ({app}\OptiScaler\dlssg_sm86)
-Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: core
+Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: core
 
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
-Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "development\*"; Flags: ignoreversion recursesubdirs skipifsourcedoesntexist; Components: streamline
+Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "development\*"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: streamline
 
 ; 4. Licenses ({app}\Licenses)
-Source: "Licenses\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "DLLSG mod\READ ME.txt"; DestDir: "{app}\Licenses"; DestName: "READ ME (DLSSG to FSR3 mod).txt"; Flags: ignoreversion; Components: core
-Source: "Dll version\XeSS_LICENSE.txt"; DestDir: "{app}\Licenses"; DestName: "XESS LICENSE.txt"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\FidelityFX_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
-Source: "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}\Licenses"; DestName: "dlssg_sm86_THIRD_PARTY_NOTICES.txt"; Flags: ignoreversion skipifsourcedoesntexist; Components: core
+Source: "Licenses\*"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "DLLSG mod\READ ME.txt"; DestDir: "{app}\Licenses"; DestName: "READ ME (DLSSG to FSR3 mod).txt"; Flags: ignoreversion overwritereadonly; Components: core
+Source: "Dll version\XeSS_LICENSE.txt"; DestDir: "{app}\Licenses"; DestName: "XESS LICENSE.txt"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\FidelityFX_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}\Licenses"; DestName: "dlssg_sm86_THIRD_PARTY_NOTICES.txt"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 
 [InstallDelete]
 ; Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder
