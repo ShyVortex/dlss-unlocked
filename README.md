@@ -14,7 +14,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 > ### Acknowledgments
 > This project is only made possible thanks to the extraordinary dedication of talented open-source developers.
 >
-> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[OptiScaler](https://github.com/optiscaler/OptiScaler)**, **[wilsjo2](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** for the pre-SR multipass enhancements, **[sdli1995](https://github.com/sdli1995/dlssg_for_sm86)** for the native Turing/Ampere MFG unlocker, **[SilyNoMeta](https://github.com/SilyNoMeta/dlssg_for_sm86)** for Dynamic MFG advancements, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
+> Sincere gratitude and respect go to **[Artur Graniszewski](https://github.com/artur-graniszewski/DLSS-Enabler)** for creating the revolutionary **DLSS Enabler**, **[OptiScaler](https://github.com/optiscaler/OptiScaler)**, **[wilsjo2](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** for the pre-SR multipass enhancements, **[sdli1995](https://github.com/sdli1995/dlssg_for_sm86)** for the native Turing/Ampere MFG unlocker, **[SilyNoMeta](https://github.com/SilyNoMeta/dlssg_for_sm86)** for Dynamic MFG advancements, **[ItsAdeline](https://github.com/ItsAdeline/NVSmooth30)** for the Smooth Motion unlocker for RTX 30 series GPUs, and **[Dagherbou](https://github.com/Dagherbou/OptiScaler_DLSSNR)** for DLSS-NR forwarder research.
 >
 > If you enjoy this project, please consider visiting their repositories, starring their work, and supporting their donation channels directly!
 
@@ -109,6 +109,7 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **[OptiScaler-DLSSNR-PreSR-Multipass (Upstream)](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** by wilsjo2
 - **[dlssg_for_sm86](https://github.com/sdli1995/dlssg_for_sm86)** by sdli1995
 - **[dlssg_for_sm86 (Dynamic MFG)](https://github.com/SilyNoMeta/dlssg_for_sm86)** by SilyNoMeta
+- **[NVSmooth30](https://github.com/ItsAdeline/NVSmooth30)** by ItsAdeline — Smooth Motion unlocker for RTX 30 series GPUs (SM86)
 - **[DLSS Enabler](https://github.com/artur-graniszewski/DLSS-Enabler)** by Artur Graniszewski
 - **[OptiScaler_DLSSNR](https://github.com/Dagherbou/OptiScaler_DLSSNR)** by Dagherbou
 - **[OptiScaler](https://github.com/optiscaler/OptiScaler)**
