@@ -720,10 +720,14 @@ jobs:
             }
         }
 
-        # Copy smooth-motion (SM86) as nvsmooth30.dll if present
-        if (Test-Path "SM86\smooth-motion.asi") {
+        # Copy nvsmooth30.dll: prioritize OptiScaler package version, fall back to local SM86/smooth-motion.asi
+        $foundNvSmooth = Get-ChildItem -Path $extractDir -Filter "nvsmooth30.dll" -Recurse -File | Select-Object -First 1
+        if ($foundNvSmooth) {
+            Copy-Item -Path $foundNvSmooth.FullName -Destination "Dll version\nvsmooth30.dll" -Force
+            Write-Host "Copied nvsmooth30.dll from OptiScaler package to Dll version\nvsmooth30.dll"
+        } elseif (Test-Path "SM86\smooth-motion.asi") {
             Copy-Item -Path "SM86\smooth-motion.asi" -Destination "Dll version\nvsmooth30.dll" -Force
-            Write-Host "Copied SM86\smooth-motion.asi to Dll version\nvsmooth30.dll"
+            Write-Host "Copied SM86\smooth-motion.asi to Dll version\nvsmooth30.dll (OptiScaler package did not include nvsmooth30.dll)"
         }
 
         # Save hash file for future cache verification
@@ -1225,12 +1229,9 @@ jobs:
         if (Test-Path "Dll version\dlss-enabler.asi") {
             Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$optiScalerSubDir\dlss-enabler-headless.dll" -Force
         }
-        if (Test-Path "SM86\smooth-motion.asi") {
-            Copy-Item -Path "SM86\smooth-motion.asi" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
-            Write-Host "Copied SM86/smooth-motion.asi to standalone archive OptiScaler/nvsmooth30.dll"
-        } elseif (Test-Path "Dll version\nvsmooth30.dll") {
+        if (Test-Path "Dll version\nvsmooth30.dll") {
             Copy-Item -Path "Dll version\nvsmooth30.dll" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
-            Write-Host "Copied Dll version/nvsmooth30.dll to standalone archive OptiScaler/nvsmooth30.dll"
+            Write-Host "Copied nvsmooth30.dll to standalone archive OptiScaler/nvsmooth30.dll"
         }
         if (Test-Path "Dll version\nvngx.ini") {
             Copy-Item -Path "Dll version\nvngx.ini" -Destination $optiScalerSubDir -Force
