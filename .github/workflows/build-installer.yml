@@ -1446,7 +1446,8 @@ jobs:
           ## 📜 Credits
           - **OptiScaler DLSS-NR Pre-SR Multipass** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2): https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
           - **OptiScaler DLSS-NR Pre-SR Multipass (Upstream)** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
-          - **dlssg_for_sm86**: ${{ steps.dlssg-check.outputs.source_url }}
+          - **dlssg_for_sm86** by sdli1995: https://github.com/sdli1995/dlssg_for_sm86
+          - **dlssg_for_sm86 (Dynamic MFG)** by SilyNoMeta: https://github.com/SilyNoMeta/dlssg_for_sm86
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler**: https://github.com/optiscaler/OptiScaler
