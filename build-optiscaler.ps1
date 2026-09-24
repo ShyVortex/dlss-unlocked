@@ -205,6 +205,12 @@ if ($optiHashToSave) {
     Set-Content -Path (Join-Path $DllVersionDir ".optiscaler_hash") -Value $optiHashToSave -Encoding ASCII
 }
 
+# Copy smooth-motion (SM86) as nvsmooth30.dll
+if (Test-Path "SM86\smooth-motion.asi") {
+    Copy-Item -Path "SM86\smooth-motion.asi" -Destination (Join-Path $DllVersionDir "nvsmooth30.dll") -Force
+    Write-Host "  SM86\smooth-motion.asi -> $DllVersionDir\nvsmooth30.dll" -ForegroundColor Gray
+}
+
 # Handle NVIDIA Streamline download & extraction
 $StreamlineDir = Join-Path $DllVersionDir "streamline"
 if (!(Test-Path $StreamlineDir)) {
@@ -448,6 +454,13 @@ if ($CreateStandaloneZip) {
     # 2. OptiScaler subfolder files: DLSS Enabler headless, DLSSG mod, upscalers & companion DLLs
     if (Test-Path "$DllVersionDir\dlss-enabler.asi") {
         Copy-Item -Path "$DllVersionDir\dlss-enabler.asi" -Destination "$optiScalerSubDir\dlss-enabler-headless.dll" -Force
+    }
+    if (Test-Path "SM86\smooth-motion.asi") {
+        Copy-Item -Path "SM86\smooth-motion.asi" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
+        Write-Host "  nvsmooth30.dll -> $optiScalerSubDir\nvsmooth30.dll" -ForegroundColor Gray
+    } elseif (Test-Path "$DllVersionDir\nvsmooth30.dll") {
+        Copy-Item -Path "$DllVersionDir\nvsmooth30.dll" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
+        Write-Host "  nvsmooth30.dll -> $optiScalerSubDir\nvsmooth30.dll" -ForegroundColor Gray
     }
     if (Test-Path "$DllVersionDir\nvngx.ini") {
         Copy-Item -Path "$DllVersionDir\nvngx.ini" -Destination $optiScalerSubDir -Force

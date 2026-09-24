@@ -715,6 +715,12 @@ jobs:
             }
         }
 
+        # Copy smooth-motion (SM86) as nvsmooth30.dll if present
+        if (Test-Path "SM86\smooth-motion.asi") {
+            Copy-Item -Path "SM86\smooth-motion.asi" -Destination "Dll version\nvsmooth30.dll" -Force
+            Write-Host "Copied SM86\smooth-motion.asi to Dll version\nvsmooth30.dll"
+        }
+
         # Save hash file for future cache verification
         if ($targetHash) {
             Set-Content -Path $hashFile -Value $targetHash -Encoding ASCII
@@ -1189,6 +1195,13 @@ jobs:
         if (Test-Path "Dll version\dlss-enabler.asi") {
             Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$optiScalerSubDir\dlss-enabler-headless.dll" -Force
         }
+        if (Test-Path "SM86\smooth-motion.asi") {
+            Copy-Item -Path "SM86\smooth-motion.asi" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
+            Write-Host "Copied SM86/smooth-motion.asi to standalone archive OptiScaler/nvsmooth30.dll"
+        } elseif (Test-Path "Dll version\nvsmooth30.dll") {
+            Copy-Item -Path "Dll version\nvsmooth30.dll" -Destination "$optiScalerSubDir\nvsmooth30.dll" -Force
+            Write-Host "Copied Dll version/nvsmooth30.dll to standalone archive OptiScaler/nvsmooth30.dll"
+        }
         if (Test-Path "Dll version\nvngx.ini") {
             Copy-Item -Path "Dll version\nvngx.ini" -Destination $optiScalerSubDir -Force
         }
@@ -1361,6 +1374,7 @@ jobs:
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
           - **Native Turing/Ampere MFG Unlocker**: Bundled `dlssg_sm86` module (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`) in `OptiScaler/dlssg_sm86/`
           - **DLSS Enabler Headless**: Multi-Frame Generation companion module (`dlss-enabler-headless.dll`)
+          - **Smooth Motion**: Frame generation motion smoothing module (`OptiScaler/nvsmooth30.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler package
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler package
           - **DLSSG to FSR3 Module**: Nukem9's mod

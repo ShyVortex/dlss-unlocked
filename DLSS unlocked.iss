@@ -88,6 +88,8 @@ Source: "Dll version\nvngx_dlssnr.dll"; DestDir: "{app}"; Flags: ignoreversion o
 
 ; 2. OptiScaler subdirectory files ({app}\OptiScaler): DLSS Enabler Headless (MFG), DLSSG mod, upscalers, companion DLLs
 Source: "Dll version\dlss-enabler.asi"; DestDir: "{app}\OptiScaler"; DestName: "dlss-enabler-headless.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "SM86\smooth-motion.asi"; DestDir: "{app}\OptiScaler"; DestName: "nvsmooth30.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\nvsmooth30.dll"; DestDir: "{app}\OptiScaler"; DestName: "nvsmooth30.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 Source: "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 Source: "Dll version\nvngx.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 
