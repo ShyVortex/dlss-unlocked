@@ -10,9 +10,7 @@ param(
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [string]$OriginalDlssnrUrl = "https://files.catbox.moe/05wm7b.dll",
     [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",
-    [string]$DlssgSm86VersionDllUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/version.dll",
-    [string]$DlssgSm86IniUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/dlssg_sm86.ini",
-    [string]$DlssgSm86NoticesUrl = "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/THIRD_PARTY_NOTICES.txt",
+    [string]$DlssgSm86Source = "https://github.com/sdli1995/dlssg_for_sm86",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -319,16 +317,23 @@ if (!(Test-Path $DlssgSm86Dir)) {
     New-Item -ItemType Directory -Path $DlssgSm86Dir | Out-Null
 }
 
+# Derive repo and URLs from source
+$dlssgRepo = ($DlssgSm86Source -replace 'https://github.com/', '').TrimEnd('/')
+$DlssgSm86VersionDllUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD/version.dll"
+$DlssgSm86IniUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD/dlssg_sm86.ini"
+Write-Host "dlssg_for_sm86 source: $DlssgSm86Source (repo: $dlssgRepo)" -ForegroundColor Cyan
+
 $targetDlssgDll = Join-Path $DlssgSm86Dir "dlssg_sm86.dll"
 $targetDlssgIni = Join-Path $DlssgSm86Dir "dlssg_sm86.ini"
-$targetDlssgNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
 $hashFile = Join-Path $DlssgSm86Dir ".commit_sha"
+$sourceRepoFile = Join-Path $DlssgSm86Dir ".source_repo"
 $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
+$localRepo = if (Test-Path $sourceRepoFile) { (Get-Content $sourceRepoFile -Raw).Trim() } else { "" }
 
 # Check remote hash from GitHub API or HEAD ETag
 $remoteHash = ""
 try {
-    $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/sdli1995/dlssg_for_sm86/commits/main" -Headers @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" } -TimeoutSec 10
+    $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$dlssgRepo/commits/HEAD" -Headers @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" } -TimeoutSec 10
     if ($commit -and $commit.sha) {
         $remoteHash = $commit.sha.Substring(0, 12)
     }
@@ -345,14 +350,16 @@ try {
 
 $needsDownload = (-not (Test-Path $targetDlssgDll)) -or
                  (-not (Test-Path $targetDlssgIni)) -or
-                 (-not (Test-Path $targetDlssgNotices)) -or
-                 ($remoteHash -and ($localHash -ne $remoteHash))
+                 ($remoteHash -and ($localHash -ne $remoteHash)) -or
+                 ($localRepo -ne $dlssgRepo)
 
 if ($needsDownload) {
-    if ($remoteHash -and $localHash -and ($localHash -ne $remoteHash)) {
+    if ($localRepo -and ($localRepo -ne $dlssgRepo)) {
+        Write-Host "dlssg_for_sm86 source changed ($localRepo -> $dlssgRepo). Re-downloading files..." -ForegroundColor Yellow
+    } elseif ($remoteHash -and $localHash -and ($localHash -ne $remoteHash)) {
         Write-Host "New dlssg_for_sm86 version detected ($remoteHash vs local $localHash). Updating files..." -ForegroundColor Yellow
     } else {
-        Write-Host "Downloading dlssg_for_sm86 files..." -ForegroundColor Yellow
+        Write-Host "Downloading dlssg_for_sm86 files from $dlssgRepo..." -ForegroundColor Yellow
     }
     
     # Download dll
@@ -371,20 +378,23 @@ if ($needsDownload) {
         Write-Host "Warning: Could not download dlssg_sm86.ini: $($_.Exception.Message)" -ForegroundColor Yellow
     }
     
-    # Download notices
-    try {
-        Invoke-WebRequest -Uri $DlssgSm86NoticesUrl -OutFile $targetDlssgNotices -UseBasicParsing -TimeoutSec 300
-        Write-Host "dlssg_sm86 THIRD_PARTY_NOTICES.txt downloaded to $targetDlssgNotices" -ForegroundColor Green
-    } catch {
-        Write-Host "Warning: Could not download dlssg_sm86 THIRD_PARTY_NOTICES.txt: $($_.Exception.Message)" -ForegroundColor Yellow
+    # Copy THIRD_PARTY_NOTICES.txt from local Licenses folder
+    $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
+    $targetNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
+    if (Test-Path $localNotices) {
+        Copy-Item -Path $localNotices -Destination $targetNotices -Force
+        Write-Host "Copied THIRD_PARTY_NOTICES.txt from local Licenses folder." -ForegroundColor Green
+    } else {
+        Write-Host "Warning: Local Licenses/dlssg_sm86_THIRD_PARTY_NOTICES.txt not found." -ForegroundColor Yellow
     }
     
     if ($remoteHash) {
         Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
-        Write-Host "Saved dlssg_sm86 hash ($remoteHash)." -ForegroundColor Gray
+        Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
+        Write-Host "Saved dlssg_sm86 hash ($remoteHash) and source ($dlssgRepo)." -ForegroundColor Gray
     }
 } else {
-    Write-Host "dlssg_sm86 files are up to date ($localHash)." -ForegroundColor Gray
+    Write-Host "dlssg_sm86 files are up to date ($localHash from $localRepo)." -ForegroundColor Gray
 }
 
 Write-Host ""

@@ -36,6 +36,13 @@ on:
         type: boolean
         required: false
         default: false
+      dlssg_sm86_source:
+        description: 'Source repository for dlssg_for_sm86 (Turing/Ampere MFG unlocker)'
+        type: choice
+        options:
+          - 'https://github.com/sdli1995/dlssg_for_sm86'
+          - 'https://github.com/SilyNoMeta/dlssg_for_sm86'
+        default: 'https://github.com/sdli1995/dlssg_for_sm86'
 
   # Trigger on push to main branch (disabled for now)
   # push:
@@ -55,9 +62,7 @@ env:
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
   STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
-  DLSSG_SM86_VERSION_DLL_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/version.dll"
-  DLSSG_SM86_INI_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/dlssg_sm86.ini"
-  DLSSG_SM86_NOTICES_URL: "https://raw.githubusercontent.com/sdli1995/dlssg_for_sm86/main/THIRD_PARTY_NOTICES.txt"
+  DLSSG_SM86_DEFAULT_SOURCE: "https://github.com/sdli1995/dlssg_for_sm86"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
 jobs:
@@ -896,7 +901,16 @@ jobs:
       id: dlssg-check
       shell: powershell
       run: |
-        $repo = "sdli1995/dlssg_for_sm86"
+        # Resolve source repository (workflow_dispatch input or default)
+        $dlssgSource = "${{ github.event.inputs.dlssg_sm86_source }}"
+        if (-not $dlssgSource -or $dlssgSource.Trim() -eq "") {
+            $dlssgSource = "$env:DLSSG_SM86_DEFAULT_SOURCE"
+        }
+        # Extract owner/repo from URL (e.g. "https://github.com/sdli1995/dlssg_for_sm86" -> "sdli1995/dlssg_for_sm86")
+        $repo = ($dlssgSource -replace 'https://github.com/', '').TrimEnd('/')
+        $repoKey = ($repo -replace '[^a-zA-Z0-9]', '_').ToLower()
+        Write-Host "dlssg_for_sm86 source: $dlssgSource (repo: $repo, key: $repoKey)"
+        
         $remoteHash = ""
         $commitDate = ""
         try {
@@ -907,7 +921,7 @@ jobs:
             if ($env:GITHUB_TOKEN) {
                 $headers['Authorization'] = "token $env:GITHUB_TOKEN"
             }
-            $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/commits/main" -Headers $headers -TimeoutSec 15
+            $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/commits/HEAD" -Headers $headers -TimeoutSec 15
             if ($commit -and $commit.sha) {
                 $remoteHash = $commit.sha.Substring(0, 12)
                 $commitDate = $commit.commit.committer.date
@@ -920,7 +934,8 @@ jobs:
         # Fallback to ETag via HEAD request if API call fails
         if (-not $remoteHash) {
             try {
-                $headResp = Invoke-WebRequest -Uri "$env:DLSSG_SM86_VERSION_DLL_URL" -Method Head -UseBasicParsing -TimeoutSec 15
+                $versionDllUrl = "https://raw.githubusercontent.com/$repo/HEAD/version.dll"
+                $headResp = Invoke-WebRequest -Uri $versionDllUrl -Method Head -UseBasicParsing -TimeoutSec 15
                 $etag = $headResp.Headers["ETag"]
                 if ($etag) {
                     $cleanEtag = ($etag -replace '[^a-zA-Z0-9]', '')
@@ -940,6 +955,9 @@ jobs:
         
         Write-Host "dlssg_for_sm86 effective hash: $remoteHash"
         "hash=$remoteHash" >> $env:GITHUB_OUTPUT
+        "repo=$repo" >> $env:GITHUB_OUTPUT
+        "repo_key=$repoKey" >> $env:GITHUB_OUTPUT
+        "source_url=$dlssgSource" >> $env:GITHUB_OUTPUT
 
     - name: Cache dlssg_sm86 files
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -947,9 +965,9 @@ jobs:
       id: cache-dlssg-sm86
       with:
         path: Dll version/dlssg_sm86
-        key: dlssg-sm86-v2-${{ steps.dlssg-check.outputs.hash }}
+        key: dlssg-sm86-v3-${{ steps.dlssg-check.outputs.repo_key }}-${{ steps.dlssg-check.outputs.hash }}
         restore-keys: |
-          dlssg-sm86-v2-
+          dlssg-sm86-v3-${{ steps.dlssg-check.outputs.repo_key }}-
 
     - name: Download and bundle dlssg_sm86 (Turing/Ampere MFG unlocker)
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -958,28 +976,31 @@ jobs:
         $dlssgDir = "Dll version\dlssg_sm86"
         if (-not (Test-Path $dlssgDir)) { New-Item -ItemType Directory -Path $dlssgDir -Force | Out-Null }
         
+        $dlssgRepo = "${{ steps.dlssg-check.outputs.repo }}"
         $remoteHash = "${{ steps.dlssg-check.outputs.hash }}"
         $hashFile = Join-Path $dlssgDir ".commit_sha"
+        $sourceRepoFile = Join-Path $dlssgDir ".source_repo"
         $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
+        $localRepo = if (Test-Path $sourceRepoFile) { (Get-Content $sourceRepoFile -Raw).Trim() } else { "" }
         
         $dllPath = Join-Path $dlssgDir "dlssg_sm86.dll"
         $iniPath = Join-Path $dlssgDir "dlssg_sm86.ini"
-        $noticesPath = Join-Path $dlssgDir "THIRD_PARTY_NOTICES.txt"
         
         $cacheHit = "${{ steps.cache-dlssg-sm86.outputs.cache-hit }}" -eq "true"
-        $filesExist = (Test-Path $dllPath) -and (Test-Path $iniPath) -and (Test-Path $noticesPath)
+        $filesExist = (Test-Path $dllPath) -and (Test-Path $iniPath)
         $hashMatches = ($localHash -and $remoteHash -and ($localHash -eq $remoteHash))
+        $repoMatches = ($localRepo -eq $dlssgRepo)
         
-        if ($cacheHit -and $filesExist -and $hashMatches) {
-            Write-Host "dlssg_sm86 files are verified up to date (hash: $localHash). Cache hit confirmed."
+        if ($cacheHit -and $filesExist -and $hashMatches -and $repoMatches) {
+            Write-Host "dlssg_sm86 files are verified up to date (repo: $dlssgRepo, hash: $localHash). Cache hit confirmed."
         } else {
-            Write-Host "Cache invalid or update required: CacheHit=$cacheHit, FilesExist=$filesExist, LocalHash='$localHash', RemoteHash='$remoteHash'"
-            Write-Host "Downloading latest dlssg_sm86 files from sdli1995/dlssg_for_sm86..."
+            Write-Host "Cache invalid or update required: CacheHit=$cacheHit, FilesExist=$filesExist, LocalHash='$localHash', RemoteHash='$remoteHash', LocalRepo='$localRepo', TargetRepo='$dlssgRepo'"
+            Write-Host "Downloading latest dlssg_sm86 files from $dlssgRepo..."
             
+            $baseRawUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD"
             $filesToDownload = @(
-                @{ Url = "$env:DLSSG_SM86_VERSION_DLL_URL"; OutFile = $dllPath; Name = "dlssg_sm86.dll (renamed from version.dll)" },
-                @{ Url = "$env:DLSSG_SM86_INI_URL"; OutFile = $iniPath; Name = "dlssg_sm86.ini" },
-                @{ Url = "$env:DLSSG_SM86_NOTICES_URL"; OutFile = $noticesPath; Name = "THIRD_PARTY_NOTICES.txt" }
+                @{ Url = "$baseRawUrl/version.dll"; OutFile = $dllPath; Name = "dlssg_sm86.dll (renamed from version.dll)" },
+                @{ Url = "$baseRawUrl/dlssg_sm86.ini"; OutFile = $iniPath; Name = "dlssg_sm86.ini" }
             )
             
             foreach ($item in $filesToDownload) {
@@ -1002,20 +1023,29 @@ jobs:
                 }
             }
             
-            # Save remote hash and compute SHA256 checksums
+            # Copy THIRD_PARTY_NOTICES.txt from local Licenses folder
+            $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
+            $noticesPath = Join-Path $dlssgDir "THIRD_PARTY_NOTICES.txt"
+            if (Test-Path $localNotices) {
+                Copy-Item -Path $localNotices -Destination $noticesPath -Force
+                Write-Host "Copied THIRD_PARTY_NOTICES.txt from local Licenses folder."
+            } else {
+                Write-Warning "Local Licenses/dlssg_sm86_THIRD_PARTY_NOTICES.txt not found."
+            }
+            
+            # Save remote hash, source repo, and compute SHA256 checksums
             Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
+            Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
             $dllHash = (Get-FileHash -Path $dllPath -Algorithm SHA256).Hash
             $iniHash = (Get-FileHash -Path $iniPath -Algorithm SHA256).Hash
-            $noticesHash = (Get-FileHash -Path $noticesPath -Algorithm SHA256).Hash
             
             $checksumLines = @(
                 "$dllHash *dlssg_sm86.dll",
-                "$iniHash *dlssg_sm86.ini",
-                "$noticesHash *THIRD_PARTY_NOTICES.txt"
+                "$iniHash *dlssg_sm86.ini"
             )
             $checksumContent = $checksumLines -join "`r`n"
             Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
-            Write-Host "Updated dlssg_sm86 files (Hash: $remoteHash)."
+            Write-Host "Updated dlssg_sm86 files from $dlssgRepo (Hash: $remoteHash)."
             Write-Host "Checksums:"
             Write-Host $checksumContent
         }
@@ -1372,7 +1402,7 @@ jobs:
           - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
           - **NVIDIA Streamline 2.14.1**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
-          - **Native Turing/Ampere MFG Unlocker**: Bundled `dlssg_sm86` module (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`) in `OptiScaler/dlssg_sm86/`
+          - **Native Turing/Ampere MFG Unlocker**: Bundled `dlssg_sm86` module (`dlssg_sm86.dll`, `dlssg_sm86.ini`) in `OptiScaler/dlssg_sm86/`
           - **DLSS Enabler Headless**: Multi-Frame Generation companion module (`dlss-enabler-headless.dll`)
           - **Smooth Motion**: Frame generation motion smoothing module (`OptiScaler/nvsmooth30.dll`)
           - **XeSS / XeLL Libraries**: Latest from OptiScaler package
@@ -1416,7 +1446,7 @@ jobs:
           ## 📜 Credits
           - **OptiScaler DLSS-NR Pre-SR Multipass** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2): https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
           - **OptiScaler DLSS-NR Pre-SR Multipass (Upstream)** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
-          - **dlssg_for_sm86** by sdli1995: https://github.com/sdli1995/dlssg_for_sm86
+          - **dlssg_for_sm86**: ${{ steps.dlssg-check.outputs.source_url }}
           - **DLSS Enabler** by Artur Graniszewski: https://github.com/artur-graniszewski/DLSS-Enabler
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler**: https://github.com/optiscaler/OptiScaler
