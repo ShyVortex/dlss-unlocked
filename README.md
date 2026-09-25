@@ -2,7 +2,7 @@
 
 [![Build Installer](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml/badge.svg)](https://github.com/ShyVortex/dlss-unlocked/actions/workflows/build-installer.yml)
 
-Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 3X, 4X)**, and **Neural Rendering (DLSS-NR)** features across NVIDIA GeForce RTX 20xx / 30xx / 40xx GPUs in DirectX 12 games. Fully compatible with **Windows** and **Linux (Proton)** out of the box.
+Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 3X, 4X)**, **Intel Xe Frame Generation (XeFG)**, and **Neural Rendering (DLSS-NR)** features across NVIDIA GeForce RTX 20xx / 30xx / 40xx and Intel Arc GPUs in DirectX 12 games. Fully compatible with **Windows** and **Linux (Proton)** out of the box.
 
 <p align="center">
   <img width="960" src="thumbnail.jpeg" alt="DLSS Unlocked Thumbnail">
@@ -26,7 +26,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 ## ✨ Features
 
-- **Multi-Frame Generation (MFG):** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. DLSS Enabler headless is also bundled as an alternative companion option.
+- **Multi-Frame Generation (MFG) & XeFG:** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. Intel Xe Frame Generation (XeFG) is also supported via the bundled `XeFGUnlock` plugin. DLSS Enabler headless is also bundled as an alternative companion option.
 - **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
 - **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for my OptiScaler-DLSSNR-PreSR-Multipass backend (based on wilsjo2), preserving native SM75/SM86 MFG unlocking, pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
@@ -49,6 +49,7 @@ Get the latest release from the **[Releases](../../releases)** page.
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `nvsmooth30.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
    - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`)
+   - **`OptiScaler/plugins/` folder:** XeFG plugin (`XeFGUnlock.asi`, `XeFGUnlock.ini`)
    - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
    - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, third-party libraries, and legal disclaimers
 3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
@@ -62,6 +63,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere):** Enabled out of the box with the bundled `dlssg_sm86` native MFG unlocker.
 - **NVIDIA GeForce RTX 40xx (Ada Lovelace):** Fully supported; can switch to the Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via the in-game overlay or `OptiScaler.ini`.
+- **Intel Arc (Xe):** Xe Frame Generation (XeFG) supported via the bundled `XeFGUnlock` plugin.
 
 ---
 
