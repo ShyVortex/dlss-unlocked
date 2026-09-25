@@ -63,7 +63,6 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere):** Enabled out of the box with the bundled `dlssg_sm86` native MFG unlocker.
 - **NVIDIA GeForce RTX 40xx (Ada Lovelace):** Fully supported; can switch to the Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via the in-game overlay or `OptiScaler.ini`.
-- **Intel Arc (Xe):** Xe Frame Generation (XeFG) supported via the bundled `XeFGUnlock` plugin.
 
 ---
 
