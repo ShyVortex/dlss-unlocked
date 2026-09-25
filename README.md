@@ -27,7 +27,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 ## ✨ Features
 
 - **Multi-Frame Generation (MFG) & XeFG:** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. Intel Xe Frame Generation (XeFG) is also supported via the bundled `XeFGUnlock` plugin. DLSS Enabler headless is also bundled as an alternative companion option.
-- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
+- **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation, Xe Frame Generation, or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
 - **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for my OptiScaler-DLSSNR-PreSR-Multipass backend (based on wilsjo2), preserving native SM75/SM86 MFG unlocking, pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
