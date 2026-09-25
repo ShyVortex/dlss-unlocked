@@ -1053,6 +1053,12 @@ jobs:
             Write-Host "Checksums:"
             Write-Host $checksumContent
         }
+        
+        # Copy ReShade.ini for dlssg_sm86 from local SM86 folder
+        if (Test-Path "SM86\ReShade.ini") {
+            Copy-Item -Path "SM86\ReShade.ini" -Destination (Join-Path $dlssgDir "ReShade.ini") -Force
+            Write-Host "Copied SM86\ReShade.ini to $dlssgDir\ReShade.ini"
+        }
 
     - name: Prepare release metadata
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')

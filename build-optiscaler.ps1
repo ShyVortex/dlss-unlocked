@@ -401,6 +401,12 @@ if ($needsDownload) {
     Write-Host "dlssg_sm86 files are up to date ($localHash from $localRepo)." -ForegroundColor Gray
 }
 
+# Copy ReShade.ini for dlssg_sm86 from local SM86 folder
+if (Test-Path "SM86\ReShade.ini") {
+    Copy-Item -Path "SM86\ReShade.ini" -Destination (Join-Path $DlssgSm86Dir "ReShade.ini") -Force
+    Write-Host "  SM86\ReShade.ini -> $DlssgSm86Dir\ReShade.ini" -ForegroundColor Gray
+}
+
 Write-Host ""
 Write-Host "OptiScaler-DLSSNR-PreSR-Multipass and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
