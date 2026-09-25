@@ -435,9 +435,17 @@ if (Test-Path $targetPath) {
     } else {
         $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
     }
+    # Update LoadAsiPlugins=true under [Plugins]
+    if ($optiIniContent -match '(?m)^LoadAsiPlugins\s*=') {
+        $optiIniContent = $optiIniContent -replace '(?m)^LoadAsiPlugins\s*=.*', 'LoadAsiPlugins=true'
+    } elseif ($optiIniContent -match '\[Plugins\]') {
+        $optiIniContent = $optiIniContent -replace '\[Plugins\]', "[Plugins]`r`nLoadAsiPlugins=true"
+    } else {
+        $optiIniContent += "`r`n[Plugins]`r`nLoadAsiPlugins=true`r`n"
+    }
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText((Resolve-Path $targetPath).Path, $optiIniContent, $utf8NoBom)
-    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, UTF8 without BOM)" -ForegroundColor Gray
+    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, LoadAsiPlugins=true, UTF8 without BOM)" -ForegroundColor Gray
 }
 
 if ($CreateStandaloneZip) {
@@ -542,6 +550,19 @@ if ($CreateStandaloneZip) {
         if (Test-Path $destDlssgSm86) { Remove-Item -Path $destDlssgSm86 -Recurse -Force }
         Copy-Item -Path "$DllVersionDir\dlssg_sm86" -Destination $optiScalerSubDir -Recurse -Force
         Write-Host "  dlssg_sm86 -> $destDlssgSm86" -ForegroundColor Gray
+    }
+
+    # Copy XeMFG plugins to OptiScaler/plugins
+    $pluginsSubDir = Join-Path $optiScalerSubDir "plugins"
+    if ((Test-Path "XeMFG\XeFGUnlock.asi") -or (Test-Path "XeMFG\XeFGUnlock.ini")) {
+        New-Item -ItemType Directory -Path $pluginsSubDir -Force | Out-Null
+        if (Test-Path "XeMFG\XeFGUnlock.asi") {
+            Copy-Item -Path "XeMFG\XeFGUnlock.asi" -Destination $pluginsSubDir -Force
+        }
+        if (Test-Path "XeMFG\XeFGUnlock.ini") {
+            Copy-Item -Path "XeMFG\XeFGUnlock.ini" -Destination $pluginsSubDir -Force
+        }
+        Write-Host "  XeMFG plugins -> $pluginsSubDir" -ForegroundColor Gray
     }
 
     # 3. Licenses folder
