@@ -114,10 +114,6 @@ Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignor
 ; Native Turing/Ampere MFG unlocker ({app}\OptiScaler\dlssg_sm86)
 Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: core
 
-; XeMFG plugins ({app}\OptiScaler\plugins)
-Source: "XeMFG\XeFGUnlock.asi"; DestDir: "{app}\OptiScaler\plugins"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
-Source: "XeMFG\XeFGUnlock.ini"; DestDir: "{app}\OptiScaler\plugins"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
-
 ; 3. NVIDIA Streamline ({app}\OptiScaler\streamline)
 Source: "Dll version\streamline\*"; DestDir: "{app}\OptiScaler\streamline"; Excludes: "development\*"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: streamline
 

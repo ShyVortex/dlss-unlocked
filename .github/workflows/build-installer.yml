@@ -1148,17 +1148,9 @@ jobs:
             } else {
                 $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
             }
-            # Update LoadAsiPlugins=true under [Plugins]
-            if ($optiIniContent -match '(?m)^LoadAsiPlugins\s*=') {
-                $optiIniContent = $optiIniContent -replace '(?m)^LoadAsiPlugins\s*=.*', 'LoadAsiPlugins=true'
-            } elseif ($optiIniContent -match '\[Plugins\]') {
-                $optiIniContent = $optiIniContent -replace '\[Plugins\]', "[Plugins]`r`nLoadAsiPlugins=true"
-            } else {
-                $optiIniContent += "`r`n[Plugins]`r`nLoadAsiPlugins=true`r`n"
-            }
             $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
             [System.IO.File]::WriteAllText((Resolve-Path $targetPath).Path, $optiIniContent, $utf8NoBom)
-            Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, LoadAsiPlugins=true, UTF8 without BOM)"
+            Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, UTF8 without BOM)"
         }
 
     - name: Update version in Inno Setup script
@@ -1308,19 +1300,6 @@ jobs:
             New-Item -ItemType Directory -Path $dlssgSm86SubDir -Force | Out-Null
             Copy-Item -Path "Dll version\dlssg_sm86\*" -Destination $dlssgSm86SubDir -Recurse -Force
             Write-Host "Copied dlssg_sm86 files to standalone archive OptiScaler/dlssg_sm86"
-        }
-
-        # Copy XeMFG plugins to OptiScaler/plugins
-        $pluginsSubDir = Join-Path $optiScalerSubDir "plugins"
-        if ((Test-Path "XeMFG\XeFGUnlock.asi") -or (Test-Path "XeMFG\XeFGUnlock.ini")) {
-            New-Item -ItemType Directory -Path $pluginsSubDir -Force | Out-Null
-            if (Test-Path "XeMFG\XeFGUnlock.asi") {
-                Copy-Item -Path "XeMFG\XeFGUnlock.asi" -Destination $pluginsSubDir -Force
-            }
-            if (Test-Path "XeMFG\XeFGUnlock.ini") {
-                Copy-Item -Path "XeMFG\XeFGUnlock.ini" -Destination $pluginsSubDir -Force
-            }
-            Write-Host "Copied XeMFG plugin files to standalone archive OptiScaler/plugins"
         }
 
         # 3. Licenses folder
