@@ -689,6 +689,10 @@ jobs:
         Copy-ExtractedFile -Filter "FidelityFX_v2_LICENSE.md" -DestinationPath "Dll version\FidelityFX_v2_LICENSE.md"
         Copy-ExtractedFile -Filter "DirectX_LICENSE.txt" -DestinationPath "Dll version\DirectX_LICENSE.txt"
         Copy-ExtractedFile -Filter "RenoDX_ATTRIBUTION.txt" -DestinationPath "Dll version\RenoDX_ATTRIBUTION.txt"
+        if (Test-Path "Licenses\SpecialK_LICENSE.txt") {
+            Copy-Item -Path "Licenses\SpecialK_LICENSE.txt" -Destination "Dll version\SpecialK_LICENSE.txt" -Force
+            Write-Host "Copied SpecialK_LICENSE.txt to Dll version\SpecialK_LICENSE.txt"
+        }
 
         # Copy nvfp4 folder if present
         $foundNvfp4 = Get-ChildItem -Path $extractDir -Filter "nvfp4" -Recurse -Directory | Select-Object -First 1
@@ -1313,7 +1317,8 @@ jobs:
             "RenoDX_ATTRIBUTION.txt",
             "FidelityFX_v2_LICENSE.md",
             "FidelityFX_LICENSE.md",
-            "XeSS_LICENSE.txt"
+            "XeSS_LICENSE.txt",
+            "SpecialK_LICENSE.txt"
         )
         foreach ($lic in $optiLicenses) {
             if (Test-Path "Dll version\$lic") {
@@ -1324,6 +1329,53 @@ jobs:
             Copy-Item -Path "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt" -Destination "$licensesSubDir\dlssg_sm86_THIRD_PARTY_NOTICES.txt" -Force
         }
         Write-Host "Copied Licenses folder to standalone archive"
+
+        # 4. Optional / RE Engine stutter fix (SpecialK Presentation Pacer)
+        $optionalSubDir = Join-Path $manualZipDir "Optional"
+        $optionalPluginsSubDir = Join-Path $optionalSubDir "plugins"
+        New-Item -ItemType Directory -Path $optionalPluginsSubDir -Force | Out-Null
+        if (Test-Path "Pacer\SKPacer.dll") {
+            Copy-Item -Path "Pacer\SKPacer.dll" -Destination (Join-Path $optionalPluginsSubDir "dxgi.dll") -Force
+            Write-Host "Copied SpecialK Presentation Pacer to standalone archive Optional/plugins/dxgi.dll"
+        }
+        $pacerReadme = @(
+            "================================================================================",
+            "SPECIALK PRESENTATION PACER (RE ENGINE / RESIDENT EVIL REQUIEM)",
+            "================================================================================",
+            "",
+            "This optional module contains SpecialK Presentation Pacer (plugins/dxgi.dll,",
+            "sourced from SpecialK64.dll).",
+            "",
+            "PURPOSE:",
+            "--------",
+            "This DLL is specifically needed to eliminate stuttering and frame pacing",
+            "issues when using Intel Xe Frame Generation (XeFG) in Resident Evil Requiem",
+            "and other RE Engine titles.",
+            "",
+            "INSTALLATION INSTRUCTIONS:",
+            "--------------------------",
+            "1. Ensure DLSS Unlocked / OptiScaler is installed in your game directory as",
+            "   dxgi.dll (the default for RE Engine).",
+            "2. Copy the `"plugins`" folder from this directory into your `"OptiScaler`"",
+            "   subfolder so that the final path is:",
+            "     <GameFolder>\OptiScaler\plugins\dxgi.dll",
+            "3. The plugin DLL must match the name of the main wrapper in the root folder",
+            "   (dxgi.dll).",
+            "",
+            "REFERENCES & DOCUMENTATION:",
+            "---------------------------",
+            "- OptiScaler RE9 Requiem Troubleshooting Wiki:",
+            "  https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-9-Requiem",
+            "- SpecialK Official Repository:",
+            "  https://github.com/SpecialKO/SpecialK",
+            "",
+            "LICENSE:",
+            "--------",
+            "SpecialK is distributed under the GNU General Public License v3 (GPL-3.0).",
+            "See Licenses/SpecialK_LICENSE.txt for the full license text."
+        ) -join "`r`n"
+        Set-Content -Path (Join-Path $optionalSubDir "README.txt") -Value $pacerReadme -Encoding UTF8
+        Write-Host "Created Optional/README.txt in standalone archive"
         
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
@@ -1430,7 +1482,8 @@ jobs:
              - **`OptiScaler/` folder:** companion modules
              - **`OptiScaler/dlssg_sm86/` folder:** native Turing/Ampere MFG unlocker files
              - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
-             - **`Licenses/` folder:** official licenses and legal disclaimer
+             - **`Optional/` folder:** SpecialK Presentation Pacer (`plugins/dxgi.dll`) to fix stuttering/pacing when using XeFG in RE Engine games
+             - **`Licenses/` folder:** official licenses (including SpecialK GPLv3) and legal disclaimer
           3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
              ```bash
              WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
