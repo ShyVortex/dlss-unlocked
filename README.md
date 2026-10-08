@@ -100,9 +100,8 @@ Some DX12 games may crash (`VK_ERROR_DEVICE_LOST`) under Wine / Proton when open
 Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **Crash on Boot (`re9.exe!0x140000000...`):**
   - Use `dxgi.dll` as the proxy name and install **[REFramework](https://github.com/praydog/REFramework)** (`dinput8.dll`) into the game root directory alongside `dxgi.dll`. REFramework safely hooks into the engine early and bypasses Capcom's VTable integrity checks.
-- **Frame Generation on RTX 20xx / 30xx GPUs:**
-  - Set `FGInput=dlssg` under `[FrameGen]` in `OptiScaler.ini` for rock-solid 2X Frame Generation.
-  - Multi-Frame Generation (MFG: 3X / 4X) can trigger race conditions with RE Engine's asynchronous worker threads; standard 2X (`FGInput=dlssg`) is recommended for RE Engine titles.
+- **Intel Xe Frame Generation (XeFG) Stutters**
+  - Install SpecialK Presentation Pacer either selecting the checkbox in the Installer or by moving content from the "Optional" folder in the standalone ZIP archive to the OptiScaler folder.
 
 ## 📜 Credits
 
