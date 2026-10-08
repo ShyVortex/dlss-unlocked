@@ -118,6 +118,7 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **[DLSSSpoofer](https://github.com/nitrog0d/DLSSSpoofer)** by NitroG0d
 - **[nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy)** by FakeMichau
 - **[d3d12-proxy](https://github.com/cdozdil/d3d12-proxy)** by Nitec
+- **[SpecialK](https://github.com/SpecialKO/SpecialK)** for RE Engine fixes
 
 ## ⚖️ Legal Disclaimer
 
