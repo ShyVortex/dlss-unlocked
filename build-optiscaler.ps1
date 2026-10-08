@@ -187,8 +187,8 @@ Copy-ExtractedFile -Pattern "FidelityFX_LICENSE.md" -DestinationName "FidelityFX
 Copy-ExtractedFile -Pattern "FidelityFX_v2_LICENSE.md" -DestinationName "FidelityFX_v2_LICENSE.md"
 Copy-ExtractedFile -Pattern "DirectX_LICENSE.txt" -DestinationName "DirectX_LICENSE.txt"
 Copy-ExtractedFile -Pattern "RenoDX_ATTRIBUTION.txt" -DestinationName "RenoDX_ATTRIBUTION.txt"
-if (Test-Path "Licenses\SpecialK_LICENSE.txt") {
-    Copy-Item -Path "Licenses\SpecialK_LICENSE.txt" -Destination (Join-Path $DllVersionDir "SpecialK_LICENSE.txt") -Force
+if (Test-Path "Licenses\REFramework_LICENSE.txt") {
+    Copy-Item -Path "Licenses\REFramework_LICENSE.txt" -Destination (Join-Path $DllVersionDir "REFramework_LICENSE.txt") -Force
 }
 
 # Copy nvfp4 folder if present
@@ -559,7 +559,7 @@ if ($CreateStandaloneZip) {
         "FidelityFX_v2_LICENSE.md",
         "FidelityFX_LICENSE.md",
         "XeSS_LICENSE.txt",
-        "SpecialK_LICENSE.txt"
+        "REFramework_LICENSE.txt"
     )
     foreach ($lic in $optiLicenses) {
         if (Test-Path "$DllVersionDir\$lic") {
@@ -571,52 +571,13 @@ if ($CreateStandaloneZip) {
     }
     Write-Host "  Licenses -> $licensesSubDir" -ForegroundColor Gray
 
-    # 4. Optional / RE Engine stutter fix (SpecialK Presentation Pacer)
-    $optionalSubDir = Join-Path $manualZipDir "Optional"
-    $optionalPluginsSubDir = Join-Path $optionalSubDir "plugins"
-    New-Item -ItemType Directory -Path $optionalPluginsSubDir -Force | Out-Null
-    if (Test-Path "Pacer\SKPacer.dll") {
-        Copy-Item -Path "Pacer\SKPacer.dll" -Destination (Join-Path $optionalPluginsSubDir "dxgi.dll") -Force
-        Write-Host "  SpecialK Presentation Pacer -> $optionalPluginsSubDir\dxgi.dll" -ForegroundColor Gray
+    # 4. REPatch (patched REFramework for Capcom titles XeFG issues)
+    $repatchSubDir = Join-Path $manualZipDir "REPatch"
+    New-Item -ItemType Directory -Path $repatchSubDir -Force | Out-Null
+    if (Test-Path "REPatch") {
+        Copy-Item -Path "REPatch\*" -Destination $repatchSubDir -Recurse -Force
+        Write-Host "  REPatch -> $repatchSubDir" -ForegroundColor Gray
     }
-    $pacerReadmeContent = @"
-================================================================================
-SPECIALK PRESENTATION PACER (RE ENGINE / RESIDENT EVIL REQUIEM)
-================================================================================
-
-This optional module contains SpecialK Presentation Pacer (plugins/dxgi.dll,
-sourced from SpecialK64.dll).
-
-PURPOSE:
---------
-This DLL is specifically needed to eliminate stuttering and frame pacing
-issues when using Intel Xe Frame Generation (XeFG) in Resident Evil Requiem
-and other RE Engine titles.
-
-INSTALLATION INSTRUCTIONS:
---------------------------
-1. Ensure DLSS Unlocked / OptiScaler is installed in your game directory as
-   dxgi.dll (the default for RE Engine).
-2. Copy the "plugins" folder from this directory into your "OptiScaler"
-   subfolder so that the final path is:
-     <GameFolder>\OptiScaler\plugins\dxgi.dll
-3. The plugin DLL must match the name of the main wrapper in the root folder
-   (dxgi.dll).
-
-REFERENCES & DOCUMENTATION:
----------------------------
-- OptiScaler RE9 Requiem Troubleshooting Wiki:
-  https://github.com/optiscaler/OptiScaler/wiki/Resident-Evil-9-Requiem
-- SpecialK Official Repository:
-  https://github.com/SpecialKO/SpecialK
-
-LICENSE:
---------
-SpecialK is distributed under the GNU General Public License v3 (GPL-3.0).
-See Licenses/SpecialK_LICENSE.txt for the full license text.
-"@
-    Set-Content -Path (Join-Path $optionalSubDir "README.txt") -Value $pacerReadmeContent -Encoding UTF8
-    Write-Host "  Optional/README.txt created" -ForegroundColor Gray
 
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
     $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }

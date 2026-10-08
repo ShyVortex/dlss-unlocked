@@ -58,7 +58,7 @@ Name: streamline; Description: "NVIDIA Streamline 2.14.1 (recommended for DLSS 5
 Name: optional; Description: Install optional troubleshooting files; Types: custom
 Name: optional/regentries; Description: Signature check override registry scripts; Types: custom
 Name: optional/fgdebug; Description: Debug INI configuration for DLSSG-to-FSR3; Types: custom
-Name: optional/pacer; Description: "Enable SpecialK Presentation Pacer (fixes RE Engine stutters)"; Types: custom; Flags: checkablealone dontinheritcheck
+Name: optional/repatch; Description: "Patch REFramework (fixes XeFG issues)"; Types: custom; Flags: checkablealone dontinheritcheck
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -112,8 +112,8 @@ Source: "DLLSG mod\DisableNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler
 Source: "DLLSG mod\RestoreNvidiaSignatureChecks.reg"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core optional/regentries
 Source: "DLLSG mod\dlssg_to_fsr3.ini"; DestDir: "{app}\OptiScaler"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: optional/fgdebug
 
-; SpecialK Presentation Pacer for RE Engine ({app}\OptiScaler\plugins\dxgi.dll)
-Source: "Pacer\SKPacer.dll"; DestDir: "{app}\OptiScaler\plugins"; DestName: "dxgi.dll"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: optional/pacer
+; Patched REFramework for XeFG ({app}\dinput8.dll)
+Source: "REPatch\dinput8.dll"; DestDir: "{app}"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: optional/repatch
 
 ; Native Turing/Ampere MFG unlocker ({app}\OptiScaler\dlssg_sm86)
 Source: "Dll version\dlssg_sm86\*"; DestDir: "{app}\OptiScaler\dlssg_sm86"; Flags: ignoreversion overwritereadonly recursesubdirs skipifsourcedoesntexist; Components: core
@@ -130,8 +130,8 @@ Source: "Dll version\FidelityFX_v2_LICENSE.md"; DestDir: "{app}\Licenses"; Flags
 Source: "Dll version\DirectX_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 Source: "Dll version\RenoDX_ATTRIBUTION.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 Source: "Dll version\dlssg_sm86\THIRD_PARTY_NOTICES.txt"; DestDir: "{app}\Licenses"; DestName: "dlssg_sm86_THIRD_PARTY_NOTICES.txt"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
-Source: "Licenses\SpecialK_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
-Source: "Dll version\SpecialK_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Licenses\REFramework_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
+Source: "Dll version\REFramework_LICENSE.txt"; DestDir: "{app}\Licenses"; Flags: ignoreversion overwritereadonly skipifsourcedoesntexist; Components: core
 
 [InstallDelete]
 ; Ensure D3D12Core.dll is not duplicated in D3D12_OptiScaler subfolder

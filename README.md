@@ -50,8 +50,8 @@ Get the latest release from the **[Releases](../../releases)** page.
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `nvsmooth30.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
    - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`)
    - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
-   - **`Optional/` folder:** SpecialK Presentation Pacer (`plugins/dxgi.dll`) and guide to fix stuttering and frame pacing issues when using XeFG in Resident Evil Requiem (RE Engine)
-   - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, SpecialK (GPLv3), third-party libraries, and legal disclaimers
+   - **`REPatch/` folder:** Patched REFramework (`dinput8.dll`) designed to address XeFG issues and stutters in Capcom / RE Engine titles
+   - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, REFramework (MIT), third-party libraries, and legal disclaimers
 3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
    ```bash
    WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
@@ -100,8 +100,8 @@ Some DX12 games may crash (`VK_ERROR_DEVICE_LOST`) under Wine / Proton when open
 Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **Crash on Boot (`re9.exe!0x140000000...`):**
   - Use `dxgi.dll` as the proxy name and install **[REFramework](https://github.com/praydog/REFramework)** (`dinput8.dll`) into the game root directory alongside `dxgi.dll`. REFramework safely hooks into the engine early and bypasses Capcom's VTable integrity checks.
-- **Intel Xe Frame Generation (XeFG) Stutters**
-  - Install SpecialK Presentation Pacer either selecting the checkbox in the Installer or by moving content from the "Optional" folder in the standalone ZIP archive to the OptiScaler folder.
+- **Intel Xe Frame Generation (XeFG) Issues & Stutters:**
+  - Install the patched REFramework build (`dinput8.dll`) by selecting the "Patch REFramework (fixes XeFG issues)" option in the installer or copying `dinput8.dll` from the `REPatch` folder in the standalone ZIP archive into your game root directory alongside `dxgi.dll`.
 
 ## 📜 Credits
 
@@ -117,7 +117,7 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **[DLSSSpoofer](https://github.com/nitrog0d/DLSSSpoofer)** by NitroG0d
 - **[nvapi-dummy](https://github.com/FakeMichau/nvapi-dummy)** by FakeMichau
 - **[d3d12-proxy](https://github.com/cdozdil/d3d12-proxy)** by Nitec
-- **[SpecialK](https://github.com/SpecialKO/SpecialK)** for RE Engine fixes
+- **[REFramework (XeFG fork)](https://github.com/onehoon/REFramework)** by onehoon (forked from praydog's REFramework)
 
 ## ⚖️ Legal Disclaimer
 
