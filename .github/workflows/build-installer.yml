@@ -59,9 +59,9 @@ permissions:
 env:
   OPTISCALER_REPO: ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
   STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip"
-  PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
-  ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
-  STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
+  PATCHED_DLSSNR_URL: "https://www.dropbox.com/scl/fi/7seq4ci14u8laj3v7h21q/nvngx_dlssnr.dll?rlkey=lxjwf7zdl26g66t10isnogism&st=9omklihc&dl=1"
+  ORIGINAL_STREAMLINE_DLSSNR_URL: "https://www.dropbox.com/scl/fi/77w2lo8dm7inwboafznos/nvngx_dlssnr_original.dll?rlkey=kuvg1yt7qi89kri3o4wyjhwgd&st=uwov3buy&dl=1"
+  STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"   # sl.dlss_nr.dll
   DLSSG_SM86_DEFAULT_SOURCE: "https://github.com/sdli1995/dlssg_for_sm86"
   ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: "true"
 
@@ -872,7 +872,7 @@ jobs:
       id: cache-dlssnr
       with:
         path: Dll version/nvngx_dlssnr.dll
-        key: patched-nvngx-dlssnr-v1
+        key: patched-nvngx-dlssnr-v2
 
     - name: Download patched nvngx_dlssnr.dll
       if: steps.cache-dlssnr.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
