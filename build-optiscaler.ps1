@@ -11,6 +11,7 @@ param(
     [string]$OriginalDlssnrUrl = "https://www.dropbox.com/scl/fi/77w2lo8dm7inwboafznos/nvngx_dlssnr_original.dll?rlkey=kuvg1yt7qi89kri3o4wyjhwgd&st=uwov3buy&dl=1",
     [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",
     [string]$DlssgSm86Source = "https://github.com/sdli1995/dlssg_for_sm86",
+    [string]$DlssgSm86ReleaseZipUrl = "https://github.com/sdli1995/dlssg_for_sm86/releases/download/0.4.0/dlssg-release-0.4.0-x64.zip",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -321,86 +322,170 @@ if ($PatchedDlssnrUrl) {
 # Download and bundle dlssg_for_sm86 (Turing/Ampere MFG unlocker)
 $DlssgSm86Dir = Join-Path $DllVersionDir "dlssg_sm86"
 if (!(Test-Path $DlssgSm86Dir)) {
-    New-Item -ItemType Directory -Path $DlssgSm86Dir | Out-Null
+    New-Item -ItemType Directory -Path $DlssgSm86Dir -Force | Out-Null
 }
-
-# Derive repo and URLs from source
-$dlssgRepo = ($DlssgSm86Source -replace 'https://github.com/', '').TrimEnd('/')
-$DlssgSm86VersionDllUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD/version.dll"
-$DlssgSm86IniUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD/dlssg_sm86.ini"
-Write-Host "dlssg_for_sm86 source: $DlssgSm86Source (repo: $dlssgRepo)" -ForegroundColor Cyan
 
 $targetDlssgDll = Join-Path $DlssgSm86Dir "dlssg_sm86.dll"
 $targetDlssgIni = Join-Path $DlssgSm86Dir "dlssg_sm86.ini"
+$targetNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
+$targetModularDir = Join-Path $DlssgSm86Dir "dlssg_sm86"
+$targetBackend = Join-Path $targetModularDir "backend\sm86_backend.dll"
+$targetKernels = Join-Path $targetModularDir "kernels\fg_kernels.dll"
+$targetRuntime = Join-Path $targetModularDir "runtime\nvngx_dlssg.dll"
+
 $hashFile = Join-Path $DlssgSm86Dir ".commit_sha"
 $sourceRepoFile = Join-Path $DlssgSm86Dir ".source_repo"
 $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
 $localRepo = if (Test-Path $sourceRepoFile) { (Get-Content $sourceRepoFile -Raw).Trim() } else { "" }
 
-# Check remote hash from GitHub API or HEAD ETag
+$isLocalSource = (Test-Path $DlssgSm86Source) -and (Test-Path (Join-Path $DlssgSm86Source "version.dll"))
+$dlssgRepo = if (-not $isLocalSource) { ($DlssgSm86Source -replace 'https://github.com/', '').TrimEnd('/') } else { "local" }
+
+# Check remote hash from GitHub API or HEAD ETag if not local
 $remoteHash = ""
-try {
-    $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$dlssgRepo/commits/HEAD" -Headers @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" } -TimeoutSec 10
-    if ($commit -and $commit.sha) {
-        $remoteHash = $commit.sha.Substring(0, 12)
-    }
-} catch {
-    # Fallback to ETag via HEAD request
+if (-not $isLocalSource) {
     try {
-        $headResp = Invoke-WebRequest -Uri $DlssgSm86VersionDllUrl -Method Head -UseBasicParsing -TimeoutSec 10
-        $etag = $headResp.Headers["ETag"]
-        if ($etag) {
-            $remoteHash = ($etag -replace '[^a-zA-Z0-9]', '').Substring(0, 12)
+        $headers = @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" }
+        $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$dlssgRepo/releases/latest" -Headers $headers -TimeoutSec 10
+        if ($release -and $release.tag_name) {
+            $remoteHash = $release.tag_name
+            $asset = $release.assets | Where-Object { $_.name -like "dlssg-release-*.zip" } | Select-Object -First 1
+            if ($asset -and $asset.browser_download_url) {
+                $DlssgSm86ReleaseZipUrl = $asset.browser_download_url
+            }
         }
     } catch {}
+
+    if (-not $remoteHash) {
+        try {
+            $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$dlssgRepo/commits/HEAD" -Headers @{ "User-Agent" = "DLSS-Unlocked-Build"; "Accept" = "application/vnd.github.v3+json" } -TimeoutSec 10
+            if ($commit -and $commit.sha) {
+                $remoteHash = $commit.sha.Substring(0, 12)
+            }
+        } catch {}
+    }
+} else {
+    $remoteHash = "local-0.4.0"
 }
 
-$needsDownload = (-not (Test-Path $targetDlssgDll)) -or
-                 (-not (Test-Path $targetDlssgIni)) -or
+$filesExist = (Test-Path $targetDlssgDll) -and
+              (Test-Path $targetDlssgIni) -and
+              (Test-Path $targetBackend) -and
+              (Test-Path $targetKernels) -and
+              (Test-Path $targetRuntime)
+
+$needsDownload = (-not $filesExist) -or
                  ($remoteHash -and ($localHash -ne $remoteHash)) -or
                  ($localRepo -ne $dlssgRepo)
 
 if ($needsDownload) {
     if ($localRepo -and ($localRepo -ne $dlssgRepo)) {
-        Write-Host "dlssg_for_sm86 source changed ($localRepo -> $dlssgRepo). Re-downloading files..." -ForegroundColor Yellow
+        Write-Host "dlssg_for_sm86 source changed ($localRepo -> $dlssgRepo). Updating files..." -ForegroundColor Yellow
     } elseif ($remoteHash -and $localHash -and ($localHash -ne $remoteHash)) {
         Write-Host "New dlssg_for_sm86 version detected ($remoteHash vs local $localHash). Updating files..." -ForegroundColor Yellow
     } else {
-        Write-Host "Downloading dlssg_for_sm86 files from $dlssgRepo..." -ForegroundColor Yellow
+        Write-Host "Staging dlssg_for_sm86 files from $dlssgRepo..." -ForegroundColor Yellow
     }
-    
-    # Download dll
-    try {
-        Invoke-WebRequest -Uri $DlssgSm86VersionDllUrl -OutFile $targetDlssgDll -UseBasicParsing -TimeoutSec 300
-        Write-Host "dlssg_sm86.dll downloaded to $targetDlssgDll" -ForegroundColor Green
-    } catch {
-        Write-Host "Warning: Could not download dlssg_sm86.dll: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
-    
-    # Download ini
-    try {
-        Invoke-WebRequest -Uri $DlssgSm86IniUrl -OutFile $targetDlssgIni -UseBasicParsing -TimeoutSec 300
-        Write-Host "dlssg_sm86.ini downloaded to $targetDlssgIni" -ForegroundColor Green
-    } catch {
-        Write-Host "Warning: Could not download dlssg_sm86.ini: $($_.Exception.Message)" -ForegroundColor Yellow
-    }
-    
-    # Copy THIRD_PARTY_NOTICES.txt from local Licenses folder
-    $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
-    $targetNotices = Join-Path $DlssgSm86Dir "THIRD_PARTY_NOTICES.txt"
-    if (Test-Path $localNotices) {
-        Copy-Item -Path $localNotices -Destination $targetNotices -Force
-        Write-Host "Copied THIRD_PARTY_NOTICES.txt from local Licenses folder." -ForegroundColor Green
+
+    $sourceDir = ""
+    $tempZip = Join-Path $TempDir "dlssg_release.zip"
+    $tempExtract = Join-Path $TempDir "dlssg_extracted"
+
+    if ($isLocalSource) {
+        $sourceDir = $DlssgSm86Source
+        Write-Host "Using local dlssg_for_sm86 source: $sourceDir" -ForegroundColor Cyan
     } else {
-        Write-Host "Warning: Local Licenses/dlssg_sm86_THIRD_PARTY_NOTICES.txt not found." -ForegroundColor Yellow
+        Write-Host "Downloading dlssg_for_sm86 package from $DlssgSm86ReleaseZipUrl..." -ForegroundColor Yellow
+        if (-not (Test-Path $TempDir)) { New-Item -ItemType Directory -Path $TempDir -Force | Out-Null }
+        if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force }
+        New-Item -ItemType Directory -Path $tempExtract -Force | Out-Null
+
+        try {
+            Invoke-WebRequest -Uri $DlssgSm86ReleaseZipUrl -OutFile $tempZip -UseBasicParsing -TimeoutSec 300
+            Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
+            Remove-Item -Path $tempZip -Force
+            $sourceDir = $tempExtract
+            Write-Host "Extracted dlssg_for_sm86 archive." -ForegroundColor Green
+        } catch {
+            Write-Host "Warning: Could not download/extract dlssg_for_sm86 release archive: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
     }
-    
-    if ($remoteHash) {
-        Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
-        Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
-        Write-Host "Saved dlssg_sm86 hash ($remoteHash) and source ($dlssgRepo)." -ForegroundColor Gray
+
+    if ($sourceDir -and (Test-Path $sourceDir)) {
+        # Copy version.dll -> dlssg_sm86.dll
+        $srcDll = Join-Path $sourceDir "version.dll"
+        if (Test-Path $srcDll) {
+            Copy-Item -Path $srcDll -Destination $targetDlssgDll -Force
+            Write-Host "  version.dll -> $targetDlssgDll" -ForegroundColor Green
+        }
+
+        # Copy dlssg_sm86.ini
+        $srcIni = Join-Path $sourceDir "dlssg_sm86.ini"
+        if (Test-Path $srcIni) {
+            Copy-Item -Path $srcIni -Destination $targetDlssgIni -Force
+            Write-Host "  dlssg_sm86.ini -> $targetDlssgIni" -ForegroundColor Green
+        }
+
+        # Copy THIRD_PARTY_NOTICES.txt
+        $srcNotices = Join-Path $sourceDir "THIRD_PARTY_NOTICES.txt"
+        $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
+        if (Test-Path $srcNotices) {
+            Copy-Item -Path $srcNotices -Destination $targetNotices -Force
+            Write-Host "  THIRD_PARTY_NOTICES.txt -> $targetNotices" -ForegroundColor Green
+        } elseif (Test-Path $localNotices) {
+            Copy-Item -Path $localNotices -Destination $targetNotices -Force
+            Write-Host "  $localNotices -> $targetNotices" -ForegroundColor Green
+        }
+
+        # Stage modular subfolder dlssg_sm86\
+        if (-not (Test-Path $targetModularDir)) {
+            New-Item -ItemType Directory -Path $targetModularDir -Force | Out-Null
+        }
+
+        $srcModularDir = Join-Path $sourceDir "dlssg_sm86"
+        if (Test-Path $srcModularDir) {
+            # Copy backend, kernels, and runtime (required for FG)
+            $components = @("backend", "kernels", "runtime")
+            foreach ($comp in $components) {
+                $srcComp = Join-Path $srcModularDir $comp
+                $destComp = Join-Path $targetModularDir $comp
+                if (Test-Path $srcComp) {
+                    if (Test-Path $destComp) { Remove-Item -Path $destComp -Recurse -Force }
+                    Copy-Item -Path $srcComp -Destination $targetModularDir -Recurse -Force
+                    Write-Host "  dlssg_sm86\$comp -> $destComp" -ForegroundColor Green
+                }
+            }
+        }
+
+        # Explicitly ensure excluded modules are not bundled
+        $excludedModules = @("sr", "xefg")
+        foreach ($ex in $excludedModules) {
+            $exDir = Join-Path $targetModularDir $ex
+            if (Test-Path $exDir) {
+                Remove-Item -Path $exDir -Recurse -Force
+                Write-Host "  Excluded dlssg_sm86\$ex from bundling" -ForegroundColor Gray
+            }
+        }
+
+        if (-not $isLocalSource -and (Test-Path $tempExtract)) {
+            Remove-Item -Path $tempExtract -Recurse -Force
+        }
+
+        if ($remoteHash) {
+            Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
+            Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
+            Write-Host "Saved dlssg_sm86 hash ($remoteHash) and source ($dlssgRepo)." -ForegroundColor Gray
+        }
     }
 } else {
+    # Ensure excluded directories are pruned even on cache hits
+    $excludedModules = @("sr", "xefg")
+    foreach ($ex in $excludedModules) {
+        $exDir = Join-Path $targetModularDir $ex
+        if (Test-Path $exDir) {
+            Remove-Item -Path $exDir -Recurse -Force
+        }
+    }
     Write-Host "dlssg_sm86 files are up to date ($localHash from $localRepo)." -ForegroundColor Gray
 }
 

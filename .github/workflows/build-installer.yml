@@ -921,14 +921,31 @@ jobs:
         
         $remoteHash = ""
         $commitDate = ""
+        $zipUrl = ""
+        $releaseTag = ""
+        $headers = @{
+            'Accept' = 'application/vnd.github.v3+json'
+            'User-Agent' = 'DLSS-Unlocked-CI'
+        }
+        if ($env:GITHUB_TOKEN) {
+            $headers['Authorization'] = "token $env:GITHUB_TOKEN"
+        }
+
         try {
-            $headers = @{
-                'Accept' = 'application/vnd.github.v3+json'
-                'User-Agent' = 'DLSS-Unlocked-CI'
+            $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers $headers -TimeoutSec 15
+            if ($release -and $release.tag_name) {
+                $releaseTag = $release.tag_name
+                $asset = $release.assets | Where-Object { $_.name -like "dlssg-release-*.zip" } | Select-Object -First 1
+                if ($asset -and $asset.browser_download_url) {
+                    $zipUrl = $asset.browser_download_url
+                    Write-Host "Found dlssg_for_sm86 release asset ($($asset.name)): $zipUrl"
+                }
             }
-            if ($env:GITHUB_TOKEN) {
-                $headers['Authorization'] = "token $env:GITHUB_TOKEN"
-            }
+        } catch {
+            Write-Warning "Could not fetch dlssg_for_sm86 release from GitHub API: $($_.Exception.Message)"
+        }
+
+        try {
             $commit = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/commits/HEAD" -Headers $headers -TimeoutSec 15
             if ($commit -and $commit.sha) {
                 $remoteHash = $commit.sha.Substring(0, 12)
@@ -938,34 +955,29 @@ jobs:
         } catch {
             Write-Warning "Could not fetch dlssg_for_sm86 commit SHA from GitHub API: $($_.Exception.Message)"
         }
-        
-        # Fallback to ETag via HEAD request if API call fails
-        if (-not $remoteHash) {
-            try {
-                $versionDllUrl = "https://raw.githubusercontent.com/$repo/HEAD/version.dll"
-                $headResp = Invoke-WebRequest -Uri $versionDllUrl -Method Head -UseBasicParsing -TimeoutSec 15
-                $etag = $headResp.Headers["ETag"]
-                if ($etag) {
-                    $cleanEtag = ($etag -replace '[^a-zA-Z0-9]', '')
-                    $remoteHash = $cleanEtag.Substring(0, [Math]::Min(12, $cleanEtag.Length))
-                    Write-Host "Fetched dlssg_for_sm86 ETag fallback: $remoteHash"
-                }
-            } catch {
-                Write-Warning "Could not fetch ETag: $($_.Exception.Message)"
-            }
+
+        if (-not $remoteHash -and $releaseTag) {
+            $remoteHash = $releaseTag
         }
-        
+
+        if (-not $zipUrl) {
+            $tagToUse = if ($releaseTag) { $releaseTag } else { "0.4.0" }
+            $zipUrl = "https://github.com/$repo/releases/download/$tagToUse/dlssg-release-$tagToUse-x64.zip"
+        }
+
         # Final fallback to timestamp
         if (-not $remoteHash) {
             $remoteHash = (Get-Date -Format "yyyyMMdd-HH")
             Write-Host "Using timestamp fallback for dlssg_for_sm86: $remoteHash"
         }
-        
+
         Write-Host "dlssg_for_sm86 effective hash: $remoteHash"
+        Write-Host "dlssg_for_sm86 package URL: $zipUrl"
         "hash=$remoteHash" >> $env:GITHUB_OUTPUT
         "repo=$repo" >> $env:GITHUB_OUTPUT
         "repo_key=$repoKey" >> $env:GITHUB_OUTPUT
         "source_url=$dlssgSource" >> $env:GITHUB_OUTPUT
+        "zip_url=$zipUrl" >> $env:GITHUB_OUTPUT
 
     - name: Cache dlssg_sm86 files
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -973,9 +985,9 @@ jobs:
       id: cache-dlssg-sm86
       with:
         path: Dll version/dlssg_sm86
-        key: dlssg-sm86-v3-${{ steps.dlssg-check.outputs.repo_key }}-${{ steps.dlssg-check.outputs.hash }}
+        key: dlssg-sm86-v4-${{ steps.dlssg-check.outputs.repo_key }}-${{ steps.dlssg-check.outputs.hash }}
         restore-keys: |
-          dlssg-sm86-v3-${{ steps.dlssg-check.outputs.repo_key }}-
+          dlssg-sm86-v4-${{ steps.dlssg-check.outputs.repo_key }}-
 
     - name: Download and bundle dlssg_sm86 (Turing/Ampere MFG unlocker)
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -986,6 +998,7 @@ jobs:
         
         $dlssgRepo = "${{ steps.dlssg-check.outputs.repo }}"
         $remoteHash = "${{ steps.dlssg-check.outputs.hash }}"
+        $zipUrl = "${{ steps.dlssg-check.outputs.zip_url }}"
         $hashFile = Join-Path $dlssgDir ".commit_sha"
         $sourceRepoFile = Join-Path $dlssgDir ".source_repo"
         $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
@@ -993,9 +1006,17 @@ jobs:
         
         $dllPath = Join-Path $dlssgDir "dlssg_sm86.dll"
         $iniPath = Join-Path $dlssgDir "dlssg_sm86.ini"
+        $modularDir = Join-Path $dlssgDir "dlssg_sm86"
+        $backendPath = Join-Path $modularDir "backend\sm86_backend.dll"
+        $kernelsPath = Join-Path $modularDir "kernels\fg_kernels.dll"
+        $runtimePath = Join-Path $modularDir "runtime\nvngx_dlssg.dll"
         
         $cacheHit = "${{ steps.cache-dlssg-sm86.outputs.cache-hit }}" -eq "true"
-        $filesExist = (Test-Path $dllPath) -and (Test-Path $iniPath)
+        $filesExist = (Test-Path $dllPath) -and
+                      (Test-Path $iniPath) -and
+                      (Test-Path $backendPath) -and
+                      (Test-Path $kernelsPath) -and
+                      (Test-Path $runtimePath)
         $hashMatches = ($localHash -and $remoteHash -and ($localHash -eq $remoteHash))
         $repoMatches = ($localRepo -eq $dlssgRepo)
         
@@ -1003,59 +1024,115 @@ jobs:
             Write-Host "dlssg_sm86 files are verified up to date (repo: $dlssgRepo, hash: $localHash). Cache hit confirmed."
         } else {
             Write-Host "Cache invalid or update required: CacheHit=$cacheHit, FilesExist=$filesExist, LocalHash='$localHash', RemoteHash='$remoteHash', LocalRepo='$localRepo', TargetRepo='$dlssgRepo'"
-            Write-Host "Downloading latest dlssg_sm86 files from $dlssgRepo..."
+            Write-Host "Downloading latest dlssg_sm86 release package from $zipUrl..."
             
-            $baseRawUrl = "https://raw.githubusercontent.com/$dlssgRepo/HEAD"
-            $filesToDownload = @(
-                @{ Url = "$baseRawUrl/version.dll"; OutFile = $dllPath; Name = "dlssg_sm86.dll (renamed from version.dll)" },
-                @{ Url = "$baseRawUrl/dlssg_sm86.ini"; OutFile = $iniPath; Name = "dlssg_sm86.ini" }
-            )
+            $tempZip = "$env:TEMP\dlssg_release.zip"
+            $tempExtract = "$env:TEMP\dlssg_extracted"
+            if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force }
+            New-Item -ItemType Directory -Path $tempExtract -Force | Out-Null
             
-            foreach ($item in $filesToDownload) {
-                Write-Host "Downloading $($item.Name) from $($item.Url)..."
-                $retries = 3
-                $downloaded = $false
-                for ($r = 1; $r -le $retries; $r++) {
-                    try {
-                        Invoke-WebRequest -Uri $item.Url -OutFile $item.OutFile -UseBasicParsing -TimeoutSec 300
-                        $downloaded = $true
-                        Write-Host "$($item.Name) downloaded successfully."
-                        break
-                    } catch {
-                        Write-Warning "Download attempt $r failed for $($item.Name): $($_.Exception.Message)"
-                        if ($r -lt $retries) { Start-Sleep -Seconds (3 * $r) }
-                    }
-                }
-                if (-not $downloaded) {
-                    throw "Failed to download required dlssg_sm86 file: $($item.Name)"
+            $retries = 3
+            $downloaded = $false
+            for ($r = 1; $r -le $retries; $r++) {
+                try {
+                    Invoke-WebRequest -Uri $zipUrl -OutFile $tempZip -UseBasicParsing -TimeoutSec 300
+                    $downloaded = $true
+                    Write-Host "dlssg_for_sm86 package downloaded successfully."
+                    break
+                } catch {
+                    Write-Warning "Download attempt $r failed for dlssg package: $($_.Exception.Message)"
+                    if ($r -lt $retries) { Start-Sleep -Seconds (3 * $r) }
                 }
             }
+            if (-not $downloaded) {
+                throw "Failed to download dlssg_for_sm86 release package from $zipUrl"
+            }
             
-            # Copy THIRD_PARTY_NOTICES.txt from local Licenses folder
+            Write-Host "Extracting dlssg_for_sm86 package..."
+            Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
+            Remove-Item -Path $tempZip -Force
+            
+            # Copy version.dll -> dlssg_sm86.dll
+            $srcDll = Join-Path $tempExtract "version.dll"
+            if (Test-Path $srcDll) {
+                Copy-Item -Path $srcDll -Destination $dllPath -Force
+                Write-Host "Extracted dlssg_sm86.dll (from version.dll)"
+            } else {
+                throw "version.dll not found in extracted dlssg package!"
+            }
+            
+            # Copy dlssg_sm86.ini
+            $srcIni = Join-Path $tempExtract "dlssg_sm86.ini"
+            if (Test-Path $srcIni) {
+                Copy-Item -Path $srcIni -Destination $iniPath -Force
+                Write-Host "Extracted dlssg_sm86.ini"
+            } else {
+                throw "dlssg_sm86.ini not found in extracted dlssg package!"
+            }
+            
+            # Copy THIRD_PARTY_NOTICES.txt from extracted package or local Licenses
+            $srcNotices = Join-Path $tempExtract "THIRD_PARTY_NOTICES.txt"
             $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
             $noticesPath = Join-Path $dlssgDir "THIRD_PARTY_NOTICES.txt"
-            if (Test-Path $localNotices) {
+            if (Test-Path $srcNotices) {
+                Copy-Item -Path $srcNotices -Destination $noticesPath -Force
+                Write-Host "Extracted THIRD_PARTY_NOTICES.txt"
+            } elseif (Test-Path $localNotices) {
                 Copy-Item -Path $localNotices -Destination $noticesPath -Force
                 Write-Host "Copied THIRD_PARTY_NOTICES.txt from local Licenses folder."
-            } else {
-                Write-Warning "Local Licenses/dlssg_sm86_THIRD_PARTY_NOTICES.txt not found."
             }
             
-            # Save remote hash, source repo, and compute SHA256 checksums
+            # Stage modular runtime subfolder: dlssg_sm86\
+            if (-not (Test-Path $modularDir)) {
+                New-Item -ItemType Directory -Path $modularDir -Force | Out-Null
+            }
+            
+            $srcModular = Join-Path $tempExtract "dlssg_sm86"
+            if (Test-Path $srcModular) {
+                # Copy required FG components: backend, kernels, runtime
+                @("backend", "kernels", "runtime") | ForEach-Object {
+                    $srcComp = Join-Path $srcModular $_
+                    $destComp = Join-Path $modularDir $_
+                    if (Test-Path $srcComp) {
+                        if (Test-Path $destComp) { Remove-Item -Path $destComp -Recurse -Force }
+                        Copy-Item -Path $srcComp -Destination $modularDir -Recurse -Force
+                        Write-Host "  Staged dlssg_sm86\$_"
+                    } else {
+                        throw "Required component dlssg_sm86\$_ not found in extracted package!"
+                    }
+                }
+            } else {
+                throw "Modular folder dlssg_sm86 not found in extracted package!"
+            }
+            
+            Remove-Item -Path $tempExtract -Recurse -Force
+            
+            # Save remote hash and source repo
             Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
             Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
-            $dllHash = (Get-FileHash -Path $dllPath -Algorithm SHA256).Hash
-            $iniHash = (Get-FileHash -Path $iniPath -Algorithm SHA256).Hash
             
+            # Compute SHA256 checksums
             $checksumLines = @(
-                "$dllHash *dlssg_sm86.dll",
-                "$iniHash *dlssg_sm86.ini"
+                "$((Get-FileHash -Path $dllPath -Algorithm SHA256).Hash) *dlssg_sm86.dll",
+                "$((Get-FileHash -Path $iniPath -Algorithm SHA256).Hash) *dlssg_sm86.ini",
+                "$((Get-FileHash -Path $backendPath -Algorithm SHA256).Hash) *dlssg_sm86/backend/sm86_backend.dll",
+                "$((Get-FileHash -Path $kernelsPath -Algorithm SHA256).Hash) *dlssg_sm86/kernels/fg_kernels.dll",
+                "$((Get-FileHash -Path $runtimePath -Algorithm SHA256).Hash) *dlssg_sm86/runtime/nvngx_dlssg.dll"
             )
             $checksumContent = $checksumLines -join "`r`n"
             Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
-            Write-Host "Updated dlssg_sm86 files from $dlssgRepo (Hash: $remoteHash)."
+            Write-Host "Updated dlssg_sm86 0.4.0 modular files from $dlssgRepo (Hash: $remoteHash)."
             Write-Host "Checksums:"
             Write-Host $checksumContent
+        }
+        
+        # Explicitly ensure excluded modules are not bundled (even on cache hit)
+        @("sr", "xefg") | ForEach-Object {
+            $exDir = Join-Path $modularDir $_
+            if (Test-Path $exDir) {
+                Remove-Item -Path $exDir -Recurse -Force
+                Write-Host "Excluded dlssg_sm86\$_ from bundle."
+            }
         }
         
         # Copy ReShade.ini for dlssg_sm86 from local SM86 folder
