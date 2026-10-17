@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       build_action:
-        description: 'Action to perform: "release" to build and publish GitHub release, or "verify" to test the build without releasing'
+        description: 'Action to perform: "release" to build and publish GitHub release, or "verify" to test the build and upload artifacts without releasing'
         type: choice
         options:
           - 'release'
@@ -82,6 +82,7 @@ jobs:
       custom_tag: ${{ steps.version_check.outputs.custom_tag }}
       custom_release_type: ${{ steps.version_check.outputs.custom_release_type }}
       should_release: ${{ steps.version_check.outputs.should_release }}
+      build_action: ${{ steps.version_check.outputs.build_action }}
     
     steps:
     - name: Checkout repository
@@ -438,6 +439,7 @@ jobs:
         echo "custom_tag=$customTag" >> $env:GITHUB_OUTPUT
         echo "custom_release_type=$customReleaseType" >> $env:GITHUB_OUTPUT
         echo "should_release=$($shouldRelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+        echo "build_action=$buildAction" >> $env:GITHUB_OUTPUT
 
         Write-Host "=== Summary ==="
         Write-Host "Should build nightly: $shouldBuildNightly ($nightlyVersion - URL: $nightlyDownloadUrl)"
@@ -1473,14 +1475,20 @@ jobs:
         }
         Write-Host "Artifact verification succeeded for ${{ matrix.build_type }}!" -ForegroundColor Green
 
-    - name: Upload build artifacts
-      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+    - name: Upload standalone zip archive
+      if: success() && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
       uses: actions/upload-artifact@v4
       with:
-        name: dlss-unlocked-${{ matrix.build_type }}-${{ steps.release_meta.outputs.effective_tag }}
-        path: |
-          Output/*.exe
-          Output/*.zip
+        name: dlss-unlocked-standalone-${{ matrix.build_type }}-${{ steps.release_meta.outputs.effective_tag }}
+        path: Output/*.zip
+        retention-days: 30
+
+    - name: Upload setup installer executable
+      if: success() && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
+      uses: actions/upload-artifact@v4
+      with:
+        name: dlss-unlocked-setup-${{ matrix.build_type }}-${{ steps.release_meta.outputs.effective_tag }}
+        path: Output/*.exe
         retention-days: 30
 
     - name: Create release
