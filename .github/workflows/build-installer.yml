@@ -58,7 +58,7 @@ permissions:
 
 env:
   OPTISCALER_REPO: ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
-  STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip"
+  STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip"
   PATCHED_DLSSNR_URL: "https://files.catbox.moe/tc3tpi.dll"                 # nvngx_dlssnr.dll
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://files.catbox.moe/05wm7b.dll"     # nvngx_dlssnr.dll
   STREAMLINE_DLSS_NR_URL: "https://files.catbox.moe/sckb7i.dll"             # sl.dlss_nr.dll
@@ -746,9 +746,9 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14.1-v3
+        key: streamline-2.14.16
         restore-keys: |
-          streamline-2.14.1-v3
+          streamline-2.14.16
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
@@ -1416,11 +1416,11 @@ jobs:
           🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.1, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.16, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, `OptiScaler/dlssg_sm86/` native MFG unlocker, and companion modules.
           - **Native DLSS MFG Default**: Out of the box, native hardware-accelerated DLSS Frame Generation is enabled by default for GeForce RTX 20 and 30 series GPUs (`External=true`, `AmpereMfgUnlock=true`). RTX 40 series (Ada Lovelace) users can switch to the Ada MFG unlocker (`AdaMfgUnlock`) via the in-game overlay or `OptiScaler.ini`.
           - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
-          - **NVIDIA Streamline 2.14.1**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
+          - **NVIDIA Streamline 2.14.16**: Pre-configured for DLSS 5 & MFG support (`OptiScaler/streamline/`)
           - **Neural Rendering Forwarder & Patched Runtime**: Included (`nvngx.dll_dlssnr.dll` forwarder and patched `nvngx_dlssnr.dll` in root)
           - **Native Turing/Ampere MFG Unlocker**: Bundled `dlssg_sm86` module (`dlssg_sm86.dll`, `dlssg_sm86.ini`) in `OptiScaler/dlssg_sm86/`
           - **DLSS Enabler Headless**: Multi-Frame Generation companion module (`dlss-enabler-headless.dll`)
@@ -1442,7 +1442,7 @@ jobs:
              - **Root:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll`
              - **`OptiScaler/` folder:** companion modules
              - **`OptiScaler/dlssg_sm86/` folder:** native Turing/Ampere MFG unlocker files
-             - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
+             - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.16 runtime files
              - **`REPatch/` folder:** patched REFramework (`dinput8.dll`) to fix XeFG issues in Capcom titles
              - **`Licenses/` folder:** official licenses (including REFramework MIT) and legal disclaimer
           3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):

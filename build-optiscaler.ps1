@@ -3,10 +3,10 @@
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.7.6",
+    [string]$OptiScalerVersion = "v0.9.65",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
-    [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.1/streamline-sdk-v2.14.1.zip",
+    [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip",
     [string]$PatchedDlssnrUrl = "https://files.catbox.moe/tc3tpi.dll",
     [string]$OriginalDlssnrUrl = "https://files.catbox.moe/05wm7b.dll",
     [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",

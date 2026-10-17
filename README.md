@@ -49,7 +49,7 @@ Get the latest release from the **[Releases](../../releases)** page.
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `nvsmooth30.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
    - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`)
-   - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.1 runtime files
+   - **`OptiScaler/streamline/` folder:** NVIDIA Streamline 2.14.16 runtime files
    - **`REPatch/` folder:** Patched REFramework (`dinput8.dll`) designed to address XeFG issues and stutters in Capcom / RE Engine titles
    - **`Licenses/` folder:** Official licenses for NVIDIA Streamline, AMD FidelityFX, Intel XeSS, REFramework (MIT), third-party libraries, and legal disclaimers
 3. **(Linux / Proton)** Launch the game with the following launch options (required for native DLSS MFG via `dlssg_sm86` in addition to the DLL override):
