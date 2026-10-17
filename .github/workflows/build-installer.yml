@@ -746,9 +746,9 @@ jobs:
       id: cache-streamline
       with:
         path: Dll version/streamline
-        key: streamline-2.14.16
+        key: streamline-2.14.16-v2
         restore-keys: |
-          streamline-2.14.16
+          streamline-2.14.16-v2
 
     - name: Download and extract NVIDIA Streamline
       if: steps.cache-streamline.outputs.cache-hit != 'true' && ((matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true'))
