@@ -225,7 +225,7 @@ jobs:
 
         # Fetch release information
         $buildAction = "${{ github.event.inputs.build_action }}"
-        if (-not $buildAction) { $buildAction = "release" }
+        if (-not $buildAction) { $buildAction = "verify" }
         $specificVersion = "${{ github.event.inputs.optiscaler_version }}"
         $customTag = "${{ github.event.inputs.tag_name }}"
         $customReleaseType = "${{ github.event.inputs.release_type }}"
@@ -238,7 +238,7 @@ jobs:
         $shouldRelease = $true
         if ($isPushRun) {
             $shouldRelease = $false
-        } elseif ($isManualRun -and $buildAction -eq "verify") {
+        } elseif ($buildAction -eq "verify") {
             $shouldRelease = $false
         }
         
