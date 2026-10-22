@@ -3,7 +3,7 @@
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.9.71",
+    [string]$OptiScalerVersion = "v0.9.72",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip",
