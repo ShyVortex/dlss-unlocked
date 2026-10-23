@@ -45,7 +45,15 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 ### Option B: Standalone Package (`.zip`) — Recommended for Linux / Manual Installs
 1. Download `dlss-unlocked-standalone-*.zip`.
-2. Extract the contents directly into your game's executable folder alongside the main game `.exe`:
+2. **(Linux)** Extract the zip anywhere and run the bundled script with the folder containing the game `.exe`:
+   ```bash
+   bash install.sh install /path/to/game/bin/x64      # first install
+   bash install.sh upgrade /path/to/game/bin/x64      # after downloading a newer zip (keeps your OptiScaler.ini)
+   bash install.sh uninstall /path/to/game/bin/x64    # removes everything and restores backed-up files
+   ```
+   Options: `--proxy dxgi|version|winmm` (default `dxgi`), `--repatch` (installs the patched REFramework as `dinput8.dll`), `--reset-config` (overwrite `OptiScaler.ini`). The script prints the matching Steam launch options when done.
+
+   **Manual alternative (any OS):** extract the contents directly into your game's executable folder alongside the main game `.exe`:
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)
    - **`OptiScaler/` folder:** Companion modules (`dlss-enabler-headless.dll`, `nvsmooth30.dll`, `dlssg_to_fsr3_amd_is_better.dll`, `nvngx.ini`, FidelityFX, XeSS, registry bypasses)
    - **`OptiScaler/dlssg_sm86/` folder:** Native Turing/Ampere MFG unlocker (`dlssg_sm86.dll`, `dlssg_sm86.ini`, `THIRD_PARTY_NOTICES.txt`, and modular runtime)
