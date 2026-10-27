@@ -664,6 +664,9 @@ if ($CreateStandaloneZip) {
         Write-Host "  REPatch -> $repatchSubDir" -ForegroundColor Gray
     }
 
+    # 5. Linux install/upgrade/uninstall helper
+    Copy-Item -Path "install.sh" -Destination $manualZipDir -Force
+
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
     $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }
     $zipOutputPath = "Output\dlss-unlocked-standalone-$effectiveTag.zip"
