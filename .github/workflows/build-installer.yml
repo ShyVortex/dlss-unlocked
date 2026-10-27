@@ -4,7 +4,7 @@ on:
   # Trigger on schedule to check for new OptiScaler_DLSSNR releases every 3 hours
   schedule:
     - cron: '0 */3 * * *'  # Run every 3 hours
-  
+
   # Allow manual trigger
   workflow_dispatch:
     inputs:
@@ -83,7 +83,7 @@ jobs:
       custom_release_type: ${{ steps.version_check.outputs.custom_release_type }}
       should_release: ${{ steps.version_check.outputs.should_release }}
       build_action: ${{ steps.version_check.outputs.build_action }}
-    
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -104,7 +104,7 @@ jobs:
             if ($env:GITHUB_TOKEN) {
                 $headers['Authorization'] = "token $env:GITHUB_TOKEN"
             }
-            
+
             if ($tag -eq "nightly") {
                 $url = "https://api.github.com/repos/$repo/releases"
                 $releases = Invoke-RestMethod -Uri $url -Headers $headers
@@ -144,15 +144,15 @@ jobs:
 
         function Get-AssetDownloadUrl {
             param($release)
-            $asset = $release.assets | Where-Object { 
-                $_.name -match "OptiScaler.*\.zip$" -or $_.name -match "OptiScaler.*\.7z$" 
+            $asset = $release.assets | Where-Object {
+                $_.name -match "OptiScaler.*\.zip$" -or $_.name -match "OptiScaler.*\.7z$"
             } | Select-Object -First 1
-            
+
             if (-not $asset) {
                 Write-Error "Could not find OptiScaler zip/7z asset in release $($release.tag_name)"
                 return @{ url = $null; filename = $null; hash = $null }
             }
-            
+
             # Extract SHA256 digest or fallback to ETag / updated_at
             $hash = ""
             if ($asset.digest -and $asset.digest -match 'sha256:([a-fA-F0-9]+)') {
@@ -190,14 +190,14 @@ jobs:
                     $headers['Authorization'] = "token $env:GITHUB_TOKEN"
                 }
                 $existingReleases = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases" -Headers $headers
-                
+
                 # Extract version from filename (e.g., OptiScaler-DLSSNR-v0.2.0.zip -> v0.2.0)
                 $versionFromFilename = ""
                 if ($filename -match "OptiScaler[-_](.+)\.(?:7z|zip)$") {
                     $versionFromFilename = $matches[1]
                 }
-                
-                $existingRelease = $existingReleases | Where-Object { 
+
+                $existingRelease = $existingReleases | Where-Object {
                     ($tag -and ($_.tag_name -eq $tag -or $_.tag_name -eq "v$tag" -or "v$($_.tag_name)" -eq $tag)) -or
                     ($versionFromFilename -and ($_.tag_name -match [regex]::Escape($versionFromFilename) -or $_.name -match [regex]::Escape($versionFromFilename)))
                 } | Select-Object -First 1
@@ -234,14 +234,14 @@ jobs:
         $isPushRun = "${{ github.event_name }}" -eq "push"
         $isScheduledRun = "${{ github.event_name }}" -eq "schedule"
         $forceBuild = $isPushRun -or ("${{ github.event.inputs.force_build }}" -eq "true") -or ($isManualRun -and $buildAction -eq "verify")
-        
+
         $shouldRelease = $true
         if ($isPushRun) {
             $shouldRelease = $false
         } elseif ($buildAction -eq "verify") {
             $shouldRelease = $false
         }
-        
+
         $shouldBuildNightly = $false
         $shouldBuildLatest = $false
         $nightlyVersion = ""
@@ -270,7 +270,7 @@ jobs:
             $rel = Get-GitHubRelease -repo "$env:OPTISCALER_REPO" -tag $specificVersion
             if ($rel) {
                 $assetInfo = Get-AssetDownloadUrl -release $rel
-                
+
                 # Determine whether this specific version should run in 'latest' (stable) or 'nightly' (prerelease) matrix pipeline
                 $isPrereleaseBuild = $false
                 if ($customReleaseType -eq "prerelease") {
@@ -458,12 +458,12 @@ jobs:
       matrix:
         build_type: ["nightly", "latest"]
       fail-fast: false
-    
+
     name: Build ${{ matrix.build_type }} installer
-    
+
     permissions:
       contents: write
-      
+
     steps:
     - name: Checkout repository
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -529,7 +529,7 @@ jobs:
         if ($cacheHit -and -not $hashMatches) {
             Write-Host "Cache hit but OptiScaler hash changed ($localHash vs expected $targetHash). Forcing re-download." -ForegroundColor Yellow
         }
-        
+
         # Self-healing fallback if download URL wasn't passed via outputs
         if (-not $downloadUrl -or $downloadUrl.Trim() -eq "") {
             Write-Host "Download URL not provided by previous step. Querying GitHub API directly for $buildType..."
@@ -572,25 +572,25 @@ jobs:
                 }
             }
         }
-        
+
         if (-not $downloadUrl -or $downloadUrl.Trim() -eq "") {
             throw "Could not determine download URL for OptiScaler_DLSSNR ($buildType)"
         }
 
         Write-Host "Downloading OptiScaler_DLSSNR $buildType ($version) from: $downloadUrl"
-        
+
         # Create temp directory
         $tempDir = "$env:TEMP\optiscaler"
         New-Item -ItemType Directory -Path $tempDir -Force
-        
+
         # Download file with retry logic
         $fileName = Split-Path $downloadUrl -Leaf
         $filePath = Join-Path $tempDir $fileName
-        
+
         $maxRetries = 3
         $retryCount = 0
         $downloaded = $false
-        
+
         while (-not $downloaded -and $retryCount -lt $maxRetries) {
             try {
                 Write-Host "Download attempt $($retryCount + 1)/$maxRetries"
@@ -606,18 +606,18 @@ jobs:
                 Start-Sleep -Seconds (5 * $retryCount)
             }
         }
-        
+
         # Verify file size
         $fileInfo = Get-Item $filePath
         if ($fileInfo.Length -lt 1MB) {
             throw "Downloaded file appears to be too small: $($fileInfo.Length) bytes"
         }
         Write-Host "Download verified: $($fileInfo.Length) bytes"
-        
+
         # Extract archive
         $extractDir = Join-Path $tempDir "extracted"
         New-Item -ItemType Directory -Path $extractDir -Force
-        
+
         try {
             if ($fileName -match "\.7z$") {
                 Write-Host "Extracting 7z archive..."
@@ -637,9 +637,9 @@ jobs:
             Get-Item $filePath | Format-List
             exit 1
         }
-        
+
         Write-Host "Extracted to: $extractDir"
-        
+
         # Helper function for copying extracted files
         function Copy-ExtractedFile {
             param(
@@ -661,7 +661,7 @@ jobs:
         Copy-ExtractedFile -Filter "nvngx.dll_dlssnr.dll" -DestinationPath "Dll version\nvngx.dll_dlssnr.dll"
         Copy-ExtractedFile -Filter "OptiScaler.ini" -DestinationPath "Dll version\OptiScaler.ini.template"
         Copy-Item -Path "Dll version\OptiScaler.ini.template" -Destination "Dll version\OptiScaler.ini" -Force
-        
+
         # Copy XeSS and XeLL
         Copy-ExtractedFile -Filter "libxess.dll" -DestinationPath "Dll version\libxess.dll"
         Copy-ExtractedFile -Filter "libxess_dx11.dll" -DestinationPath "Dll version\libxess_dx11.dll"
@@ -716,7 +716,7 @@ jobs:
             "DLLSG mod\DisableNvidiaSignatureChecks.reg",
             "DLLSG mod\RestoreNvidiaSignatureChecks.reg"
         )
-        
+
         foreach ($file in $filesToCheck) {
             if (Test-Path $file) {
                 $info = Get-Item $file
@@ -759,17 +759,17 @@ jobs:
         $streamlineUrl = "$env:STREAMLINE_URL"
         $streamlineDir = "Dll version\streamline"
         if (-not (Test-Path $streamlineDir)) { New-Item -ItemType Directory -Path $streamlineDir -Force | Out-Null }
-        
+
         Write-Host "Downloading NVIDIA Streamline from: $streamlineUrl"
         $tempZip = "$env:TEMP\streamline.zip"
         $tempExtract = "$env:TEMP\streamline_extracted"
         if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force }
         New-Item -ItemType Directory -Path $tempExtract -Force | Out-Null
-        
+
         $maxRetries = 3
         $retryCount = 0
         $downloaded = $false
-        
+
         while (-not $downloaded -and $retryCount -lt $maxRetries) {
             try {
                 Invoke-WebRequest -Uri $streamlineUrl -OutFile $tempZip -UseBasicParsing -TimeoutSec 300
@@ -785,13 +785,13 @@ jobs:
                 Start-Sleep -Seconds (5 * $retryCount)
             }
         }
-        
+
         if (Test-Path $tempZip) {
             Write-Host "Extracting Streamline zip to $tempExtract..."
             Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
             Remove-Item -Path $tempZip -Force
             Write-Host "Streamline archive extracted."
-            
+
             $binX64Dir = Join-Path $tempExtract "bin\x64"
             if (-not (Test-Path $binX64Dir)) {
                 $foundX64 = Get-ChildItem -Path $tempExtract -Recurse -Directory -Filter "x64" | Where-Object { $_.FullName -like "*bin*x64*" } | Select-Object -First 1
@@ -850,7 +850,7 @@ jobs:
                 }
             }
         }
-        
+
         # Validate that all required Streamline and DLSS-NR files exist before caching
         $requiredFiles = @("sl.interposer.dll", "sl.common.dll", "sl.dlss.dll", "sl.dlss_g.dll", "sl.deepdvc.dll", "nvngx_dlssnr.dll", "sl.dlss_nr.dll")
         $missingFiles = @()
@@ -864,7 +864,7 @@ jobs:
             Write-Error "Streamline preparation failed! Missing required files in ${streamlineDir}: $($missingFiles -join ', ')"
             exit 1
         }
-        
+
         Write-Host "Streamline files in ${streamlineDir} (all required files verified):"
         Get-ChildItem -Path $streamlineDir | Format-Table Name, Length
 
@@ -888,7 +888,7 @@ jobs:
             $dlssnrDownloaded = $false
             $dlssnrRetries = 3
             $retryCount = 0
-            
+
             while (-not $dlssnrDownloaded -and $retryCount -lt $dlssnrRetries) {
                 try {
                     Invoke-WebRequest -Uri $patchedDlssnrUrl -OutFile $targetDlssnrPath -UseBasicParsing -TimeoutSec 300
@@ -920,7 +920,7 @@ jobs:
         $repo = ($dlssgSource -replace 'https://github.com/', '').TrimEnd('/')
         $repoKey = ($repo -replace '[^a-zA-Z0-9]', '_').ToLower()
         Write-Host "dlssg_for_sm86 source: $dlssgSource (repo: $repo, key: $repoKey)"
-        
+
         $remoteHash = ""
         $commitDate = ""
         $zipUrl = ""
@@ -963,7 +963,7 @@ jobs:
         }
 
         if (-not $zipUrl) {
-            $tagToUse = if ($releaseTag) { $releaseTag } else { "0.4.0" }
+            $tagToUse = if ($releaseTag) { $releaseTag } else { "0.4.1" }
             $zipUrl = "https://github.com/$repo/releases/download/$tagToUse/dlssg-release-$tagToUse-x64.zip"
         }
 
@@ -997,7 +997,7 @@ jobs:
       run: |
         $dlssgDir = "Dll version\dlssg_sm86"
         if (-not (Test-Path $dlssgDir)) { New-Item -ItemType Directory -Path $dlssgDir -Force | Out-Null }
-        
+
         $dlssgRepo = "${{ steps.dlssg-check.outputs.repo }}"
         $remoteHash = "${{ steps.dlssg-check.outputs.hash }}"
         $zipUrl = "${{ steps.dlssg-check.outputs.zip_url }}"
@@ -1005,14 +1005,14 @@ jobs:
         $sourceRepoFile = Join-Path $dlssgDir ".source_repo"
         $localHash = if (Test-Path $hashFile) { (Get-Content $hashFile -Raw).Trim() } else { "" }
         $localRepo = if (Test-Path $sourceRepoFile) { (Get-Content $sourceRepoFile -Raw).Trim() } else { "" }
-        
+
         $dllPath = Join-Path $dlssgDir "dlssg_sm86.dll"
         $iniPath = Join-Path $dlssgDir "dlssg_sm86.ini"
         $modularDir = Join-Path $dlssgDir "dlssg_sm86"
         $backendPath = Join-Path $modularDir "backend\sm86_backend.dll"
         $kernelsPath = Join-Path $modularDir "kernels\fg_kernels.dll"
         $runtimePath = Join-Path $modularDir "runtime\nvngx_dlssg.dll"
-        
+
         $cacheHit = "${{ steps.cache-dlssg-sm86.outputs.cache-hit }}" -eq "true"
         $filesExist = (Test-Path $dllPath) -and
                       (Test-Path $iniPath) -and
@@ -1021,18 +1021,18 @@ jobs:
                       (Test-Path $runtimePath)
         $hashMatches = ($localHash -and $remoteHash -and ($localHash -eq $remoteHash))
         $repoMatches = ($localRepo -eq $dlssgRepo)
-        
+
         if ($cacheHit -and $filesExist -and $hashMatches -and $repoMatches) {
             Write-Host "dlssg_sm86 files are verified up to date (repo: $dlssgRepo, hash: $localHash). Cache hit confirmed."
         } else {
             Write-Host "Cache invalid or update required: CacheHit=$cacheHit, FilesExist=$filesExist, LocalHash='$localHash', RemoteHash='$remoteHash', LocalRepo='$localRepo', TargetRepo='$dlssgRepo'"
             Write-Host "Downloading latest dlssg_sm86 release package from $zipUrl..."
-            
+
             $tempZip = "$env:TEMP\dlssg_release.zip"
             $tempExtract = "$env:TEMP\dlssg_extracted"
             if (Test-Path $tempExtract) { Remove-Item -Path $tempExtract -Recurse -Force }
             New-Item -ItemType Directory -Path $tempExtract -Force | Out-Null
-            
+
             $retries = 3
             $downloaded = $false
             for ($r = 1; $r -le $retries; $r++) {
@@ -1049,11 +1049,11 @@ jobs:
             if (-not $downloaded) {
                 throw "Failed to download dlssg_for_sm86 release package from $zipUrl"
             }
-            
+
             Write-Host "Extracting dlssg_for_sm86 package..."
             Expand-Archive -Path $tempZip -DestinationPath $tempExtract -Force
             Remove-Item -Path $tempZip -Force
-            
+
             # Copy version.dll -> dlssg_sm86.dll
             $srcDll = Join-Path $tempExtract "version.dll"
             if (Test-Path $srcDll) {
@@ -1062,7 +1062,7 @@ jobs:
             } else {
                 throw "version.dll not found in extracted dlssg package!"
             }
-            
+
             # Copy dlssg_sm86.ini
             $srcIni = Join-Path $tempExtract "dlssg_sm86.ini"
             if (Test-Path $srcIni) {
@@ -1071,7 +1071,7 @@ jobs:
             } else {
                 throw "dlssg_sm86.ini not found in extracted dlssg package!"
             }
-            
+
             # Copy THIRD_PARTY_NOTICES.txt from extracted package or local Licenses
             $srcNotices = Join-Path $tempExtract "THIRD_PARTY_NOTICES.txt"
             $localNotices = "Licenses\dlssg_sm86_THIRD_PARTY_NOTICES.txt"
@@ -1083,12 +1083,12 @@ jobs:
                 Copy-Item -Path $localNotices -Destination $noticesPath -Force
                 Write-Host "Copied THIRD_PARTY_NOTICES.txt from local Licenses folder."
             }
-            
+
             # Stage modular runtime subfolder: dlssg_sm86\
             if (-not (Test-Path $modularDir)) {
                 New-Item -ItemType Directory -Path $modularDir -Force | Out-Null
             }
-            
+
             $srcModular = Join-Path $tempExtract "dlssg_sm86"
             if (Test-Path $srcModular) {
                 # Copy required FG components: backend, kernels, runtime
@@ -1106,13 +1106,13 @@ jobs:
             } else {
                 throw "Modular folder dlssg_sm86 not found in extracted package!"
             }
-            
+
             Remove-Item -Path $tempExtract -Recurse -Force
-            
+
             # Save remote hash and source repo
             Set-Content -Path $hashFile -Value $remoteHash -Encoding ASCII
             Set-Content -Path $sourceRepoFile -Value $dlssgRepo -Encoding ASCII
-            
+
             # Compute SHA256 checksums
             $checksumLines = @(
                 "$((Get-FileHash -Path $dllPath -Algorithm SHA256).Hash) *dlssg_sm86.dll",
@@ -1123,11 +1123,11 @@ jobs:
             )
             $checksumContent = $checksumLines -join "`r`n"
             Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
-            Write-Host "Updated dlssg_sm86 0.4.0 modular files from $dlssgRepo (Hash: $remoteHash)."
+            Write-Host "Updated dlssg_sm86 0.4.1 modular files from $dlssgRepo (Hash: $remoteHash)."
             Write-Host "Checksums:"
             Write-Host $checksumContent
         }
-        
+
         # Explicitly ensure excluded modules are not bundled (even on cache hit)
         @("sr", "xefg") | ForEach-Object {
             $exDir = Join-Path $modularDir $_
@@ -1136,7 +1136,7 @@ jobs:
                 Write-Host "Excluded dlssg_sm86\$_ from bundle."
             }
         }
-        
+
         # Copy ReShade.ini for dlssg_sm86 from local SM86 folder
         if (Test-Path "SM86\ReShade.ini") {
             Copy-Item -Path "SM86\ReShade.ini" -Destination (Join-Path $dlssgDir "ReShade.ini") -Force
@@ -1153,7 +1153,7 @@ jobs:
         $buildType = "${{ matrix.build_type }}"
         $customTag = "${{ needs.check-versions.outputs.custom_tag }}"
         $customReleaseType = "${{ needs.check-versions.outputs.custom_release_type }}"
-        
+
         # Determine effective tag
         $effectiveTag = ""
         if ($customTag -and $customTag.Trim() -ne "") {
@@ -1165,7 +1165,7 @@ jobs:
         } else {
             $effectiveTag = $buildType
         }
-        
+
         # Determine display type label (e.g. Stable, Pre-release, Nightly)
         $displayType = ""
         if ($customReleaseType -eq "stable") {
@@ -1179,24 +1179,24 @@ jobs:
                 $displayType = "Stable"
             }
         }
-        
+
         # Determine release title
         if ($customTag -and $customTag.Trim() -ne "") {
             $releaseTitle = "DLSS Unlocked ($displayType) - $effectiveTag"
         } else {
             $releaseTitle = "DLSS Unlocked ($displayType) - OptiScaler_DLSSNR $optiVersion"
         }
-        
+
         # Determine flags
         $isPrerelease = ($customReleaseType -eq "prerelease") -or ($customReleaseType -ne "stable" -and $buildType -eq "nightly")
         $makeLatest = ($customReleaseType -eq "stable") -or ($customReleaseType -ne "prerelease" -and $buildType -eq "latest")
-        
+
         echo "effective_tag=$effectiveTag" >> $env:GITHUB_OUTPUT
         echo "display_type=$displayType" >> $env:GITHUB_OUTPUT
         echo "release_title=$releaseTitle" >> $env:GITHUB_OUTPUT
         echo "is_prerelease=$($isPrerelease.ToString().ToLower())" >> $env:GITHUB_OUTPUT
         echo "make_latest=$($makeLatest.ToString().ToLower())" >> $env:GITHUB_OUTPUT
-        
+
         Write-Host "=== Release Metadata ==="
         Write-Host "Effective Tag: $effectiveTag"
         Write-Host "Display Type: $displayType"
@@ -1243,26 +1243,26 @@ jobs:
         $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
         $optiVersion = "${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}"
         $buildType = "${{ matrix.build_type }}"
-        
+
         $outputName = "dlss-unlocked-setup-$effectiveTag"
-        
+
         $issFile = "DLSS unlocked.iss"
         $content = Get-Content $issFile -Raw
-        
+
         # Update version to use timestamp
         $timestamp = Get-Date -Format "yyyyMMdd.HHmmss"
         $dlssVersion = "1.0.$timestamp"
         $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"$dlssVersion`""
-        
+
         # Update output filename
         $content = $content -replace 'OutputBaseFilename=.*', "OutputBaseFilename=$outputName"
-        
+
         # Remove icon reference if it exists
         $content = $content -replace 'SetupIconFile=.*', '; SetupIconFile removed - no icon'
-        
+
         # Save updated file
         Set-Content -Path $issFile -Value $content -Encoding UTF8
-        
+
         Write-Host "Updated Inno Setup script ($issFile)"
         Write-Host "Output filename: $outputName.exe"
         Write-Host "DLSS Unlocked version: $dlssVersion"
@@ -1278,14 +1278,14 @@ jobs:
       shell: powershell
       run: |
         $effectiveTag = "${{ steps.release_meta.outputs.effective_tag }}"
-        
+
         $manualZipDir = "$env:TEMP\manual_package"
         if (Test-Path $manualZipDir) { Remove-Item -Path $manualZipDir -Recurse -Force }
         New-Item -ItemType Directory -Path $manualZipDir -Force
-        
+
         $optiScalerSubDir = Join-Path $manualZipDir "OptiScaler"
         New-Item -ItemType Directory -Path $optiScalerSubDir -Force
-        
+
         # 1. Root files: dxgi.dll, OptiScaler.ini, nvngx.dll_dlssnr.dll
         $optiScalerDll = Get-ChildItem -Path "Dll version" -Filter "OptiScaler.dll" -File | Select-Object -First 1
         if (-not $optiScalerDll) {
@@ -1300,7 +1300,7 @@ jobs:
         if ($optiScalerDll) {
             Copy-Item -Path $optiScalerDll.FullName -Destination "$manualZipDir\dxgi.dll" -Force
         }
-        
+
         # Copy OptiScaler_DLSSNR config and forwarder
         if (Test-Path "Dll version\OptiScaler.ini") {
             Copy-Item -Path "Dll version\OptiScaler.ini" -Destination "$manualZipDir\OptiScaler.ini" -Force
@@ -1313,7 +1313,7 @@ jobs:
             Copy-Item -Path "Dll version\nvngx_dlssnr.dll" -Destination $manualZipDir -Force
             Write-Host "Copied patched nvngx_dlssnr.dll to standalone archive root"
         }
-        
+
         # 2. OptiScaler subfolder files: DLSS Enabler headless, DLSSG mod, upscalers & companion DLLs
         if (Test-Path "Dll version\dlss-enabler.asi") {
             Copy-Item -Path "Dll version\dlss-enabler.asi" -Destination "$optiScalerSubDir\dlss-enabler-headless.dll" -Force
@@ -1325,7 +1325,7 @@ jobs:
         if (Test-Path "Dll version\nvngx.ini") {
             Copy-Item -Path "Dll version\nvngx.ini" -Destination $optiScalerSubDir -Force
         }
-        
+
         # Copy DLSSG mod components (excluding _nvngx.dll to prevent Proton/Linux loader deadlocks)
         if (Test-Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll") {
             Copy-Item -Path "DLLSG mod\dlssg_to_fsr3_amd_is_better.dll" -Destination $optiScalerSubDir -Force
@@ -1336,7 +1336,7 @@ jobs:
         if (Test-Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg") {
             Copy-Item -Path "DLLSG mod\RestoreNvidiaSignatureChecks.reg" -Destination $optiScalerSubDir -Force
         }
-        
+
         # Copy upscaler and FidelityFX / XeSS companion DLLs
         $companionDlls = @(
             "amd_fidelityfx_dx12.dll",
@@ -1360,7 +1360,7 @@ jobs:
         if (Test-Path "$optiScalerSubDir\D3D12_OptiScaler") {
             Remove-Item -Path "$optiScalerSubDir\D3D12_OptiScaler" -Recurse -Force
         }
-        
+
         # Copy nvfp4 folder if present
         if (Test-Path "Dll version\nvfp4") {
             Copy-Item -Path "Dll version\nvfp4" -Destination $optiScalerSubDir -Recurse -Force
@@ -1419,25 +1419,25 @@ jobs:
 
         # 5. Linux install/upgrade/uninstall helper
         Copy-Item -Path "install.sh" -Destination $manualZipDir -Force
-        
+
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
-        
+
         $zipOutputName = "dlss-unlocked-standalone-$effectiveTag.zip"
         $zipOutputPath = "Output\$zipOutputName"
-        
+
         # Create standalone zip with 7z to ensure forward slashes '/' (fixes Ark/Linux archive managers)
         $workspacePath = (Get-Location).Path
         $fullZipOutputPath = Join-Path $workspacePath $zipOutputPath
         if (Test-Path $fullZipOutputPath) { Remove-Item $fullZipOutputPath -Force }
-        
+
         Push-Location $manualZipDir
         try {
             & 7z a -tzip "$fullZipOutputPath" *
         } finally {
             Pop-Location
         }
-        
+
         Write-Host "Created OptiScaler_DLSSNR monolithic standalone zip: $zipOutputPath"
         Get-Item $fullZipOutputPath | Format-List Name, Length
 
@@ -1453,7 +1453,7 @@ jobs:
         Write-Host "=== Verifying Generated Artifacts (${{ matrix.build_type }}) ==="
         $exeFiles = Get-ChildItem -Path "Output" -Filter "*.exe" -File
         $zipFiles = Get-ChildItem -Path "Output" -Filter "*.zip" -File
-        
+
         $hasError = $false
         if ($exeFiles.Count -eq 0) {
             Write-Error "Verification failed: No setup .exe produced in Output/"
@@ -1463,7 +1463,7 @@ jobs:
                 Write-Host "[OK] Setup executable: $($f.Name) ($([math]::Round($f.Length / 1MB, 2)) MB)"
             }
         }
-        
+
         if ($zipFiles.Count -eq 0) {
             Write-Error "Verification failed: No standalone .zip produced in Output/"
             $hasError = $true
@@ -1472,7 +1472,7 @@ jobs:
                 Write-Host "[OK] Standalone archive: $($f.Name) ($([math]::Round($f.Length / 1MB, 2)) MB)"
             }
         }
-        
+
         if ($hasError) {
             exit 1
         }
@@ -1502,7 +1502,7 @@ jobs:
         name: ${{ steps.release_meta.outputs.release_title }}
         body: |
           🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-NR-PreSR-MFG ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
-          
+
           ## 📦 What's Included
           - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-NR-PreSR-MFG, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.16, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, `OptiScaler/dlssg_sm86/` native MFG unlocker, and companion modules.
@@ -1517,13 +1517,13 @@ jobs:
           - **AMD FidelityFX**: Latest DX12 / Vulkan binaries from OptiScaler package
           - **DLSSG to FSR3 Module**: Nukem9's mod
           - **Registry Overrides**: Latest signature override scripts
-          
+
           ## 🔧 Installation
           ### Option A: Setup Installer (Recommended for Windows)
           1. Download `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe`
           2. Run the setup and select your game directory
           3. Complete the installation wizard
-          
+
           ### Option B: Manual Installation (Recommended for Linux / Proton)
           1. Download `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip`
           2. Extract contents directly into your game directory alongside the game `.exe`:
@@ -1537,7 +1537,7 @@ jobs:
              ```bash
              WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
              ```
-          
+
           ## 📋 Release Information
           - **Build Date**: ${{ steps.date.outputs.date }}
           - **Release Tag**: ${{ steps.release_meta.outputs.effective_tag }}
@@ -1547,11 +1547,11 @@ jobs:
           - **OptiScaler Asset Hash**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}`
           - **Build Trigger**: ${{ github.event_name == 'workflow_dispatch' && 'Manual trigger' || (github.event_name == 'schedule' && 'Scheduled automatic build' || 'Push trigger') }}
           <!-- optiscaler_hash: ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }} -->
-          
+
           ## 🎮 Supported GPUs
           - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere)**: Enabled by default with hardware-accelerated native DLSS MFG (`dlssg_sm86`).
           - **NVIDIA GeForce RTX 40xx (Ada Lovelace)**: Fully supported; switch to Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via in-game overlay or `OptiScaler.ini`.
-          
+
           ## 📜 Credits
           - **OptiScaler NR Pre-SR MFG** by ShyVortex: https://github.com/ShyVortex/OptiScaler-NR-PreSR-MFG
           - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
@@ -1562,7 +1562,7 @@ jobs:
           - **OptiScaler_DLSSNR** by Dagherbou: https://github.com/Dagherbou/OptiScaler_DLSSNR
           - **OptiScaler**: https://github.com/optiscaler/OptiScaler
           - **REFramework (XeFG fork)** by onehoon: https://github.com/onehoon/REFramework
-          
+
           ---
           Built with OptiScaler-NR-PreSR-MFG `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
         files: |
