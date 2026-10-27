@@ -1,9 +1,9 @@
-# DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script
-# This script downloads or extracts OptiScaler-DLSSNR-PreSR-Multipass releases and copies files to the build structure
+# DLSS-Unlocked OptiScaler-NR-PreSR-MFG Build Script
+# This script downloads or extracts OptiScaler-NR-PreSR-MFG releases and copies files to the build structure
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.9.72",
+    [string]$OptiScalerVersion = "v0.9.75",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip",
@@ -18,10 +18,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-Write-Host "DLSS-Unlocked OptiScaler-DLSSNR-PreSR-Multipass Build Script" -ForegroundColor Green
+Write-Host "DLSS-Unlocked OptiScaler-NR-PreSR-MFG Build Script" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 
-$Repo = "ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass"
+$Repo = "ShyVortex/OptiScaler-NR-PreSR-MFG"
 $TempDir = "temp_optiscaler"
 
 # Determine OptiScaler archive path or download
@@ -138,7 +138,7 @@ if (!(Test-Path $DllVersionDir)) {
     New-Item -ItemType Directory -Path $DllVersionDir | Out-Null
 }
 
-Write-Host "Copying OptiScaler-DLSSNR-PreSR-Multipass files to build structure..." -ForegroundColor Yellow
+Write-Host "Copying OptiScaler-NR-PreSR-MFG files to build structure..." -ForegroundColor Yellow
 
 # Helper to find and copy file recursively
 function Copy-ExtractedFile {
@@ -496,7 +496,7 @@ if (Test-Path "SM86\ReShade.ini") {
 }
 
 Write-Host ""
-Write-Host "OptiScaler-DLSSNR-PreSR-Multipass and Streamline files copied successfully!" -ForegroundColor Green
+Write-Host "OptiScaler-NR-PreSR-MFG and Streamline files copied successfully!" -ForegroundColor Green
 Write-Host ""
 Write-Host "Build directory contents ($DllVersionDir):" -ForegroundColor Cyan
 Get-ChildItem $DllVersionDir | Format-Table Name, Length, LastWriteTime -AutoSize

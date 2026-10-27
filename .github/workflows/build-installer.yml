@@ -57,7 +57,7 @@ permissions:
   actions: read
 
 env:
-  OPTISCALER_REPO: ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
+  OPTISCALER_REPO: ShyVortex/OptiScaler-NR-PreSR-MFG
   STREAMLINE_URL: "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip"
   PATCHED_DLSSNR_URL: "https://www.dropbox.com/scl/fi/7seq4ci14u8laj3v7h21q/nvngx_dlssnr.dll?rlkey=lxjwf7zdl26g66t10isnogism&st=9omklihc&dl=1"
   ORIGINAL_STREAMLINE_DLSSNR_URL: "https://www.dropbox.com/scl/fi/77w2lo8dm7inwboafznos/nvngx_dlssnr_original.dll?rlkey=kuvg1yt7qi89kri3o4wyjhwgd&st=uwov3buy&dl=1"
@@ -503,7 +503,7 @@ jobs:
           optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
           optiscaler-v4-
 
-    - name: Download and extract OptiScaler-DLSSNR-PreSR-Multipass
+    - name: Download and extract OptiScaler-NR-PreSR-MFG
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
       shell: powershell
       run: |
@@ -1498,10 +1498,10 @@ jobs:
         tag_name: ${{ steps.release_meta.outputs.effective_tag }}
         name: ${{ steps.release_meta.outputs.release_title }}
         body: |
-          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-DLSSNR-PreSR-Multipass ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
+          🚀 **DLSS Unlocked** - ${{ steps.release_meta.outputs.display_type }} (${{ steps.release_meta.outputs.effective_tag }}) with OptiScaler-NR-PreSR-MFG ${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}
           
           ## 📦 What's Included
-          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-DLSSNR-PreSR-Multipass, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.16, and NVIDIA runtime components.
+          - **Automated Setup (`.exe`)**: `dlss-unlocked-setup-${{ steps.release_meta.outputs.effective_tag }}.exe` — All-in-one installer that configures and deploys `dxgi.dll` (or `version.dll`), OptiScaler-NR-PreSR-MFG, native Turing/Ampere DLSS MFG (`dlssg_sm86`), DLSS Enabler companion, DLSSG-to-FSR3, NVIDIA Streamline 2.14.16, and NVIDIA runtime components.
           - **Standalone Archive (`.zip`)**: `dlss-unlocked-standalone-${{ steps.release_meta.outputs.effective_tag }}.zip` — Contains standalone `dxgi.dll` (rename to `version.dll` if using ReShade), `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, patched `nvngx_dlssnr.dll`, `OptiScaler/dlssg_sm86/` native MFG unlocker, and companion modules.
           - **Native DLSS MFG Default**: Out of the box, native hardware-accelerated DLSS Frame Generation is enabled by default for GeForce RTX 20 and 30 series GPUs (`External=true`, `AmpereMfgUnlock=true`). RTX 40 series (Ada Lovelace) users can switch to the Ada MFG unlocker (`AdaMfgUnlock`) via the in-game overlay or `OptiScaler.ini`.
           - **OptiScaler Version**: `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ matrix.build_type }})
@@ -1550,8 +1550,8 @@ jobs:
           - **NVIDIA GeForce RTX 40xx (Ada Lovelace)**: Fully supported; switch to Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via in-game overlay or `OptiScaler.ini`.
           
           ## 📜 Credits
-          - **OptiScaler DLSS-NR Pre-SR Multipass** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2): https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass
-          - **OptiScaler DLSS-NR Pre-SR Multipass (Upstream)** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
+          - **OptiScaler NR Pre-SR MFG** by ShyVortex: https://github.com/ShyVortex/OptiScaler-NR-PreSR-MFG
+          - **OptiScaler DLSS-NR Pre-SR Multipass** by wilsjo2: https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass
           - **dlssg_for_sm86** by sdli1995: https://github.com/sdli1995/dlssg_for_sm86
           - **dlssg_for_sm86 (Dynamic MFG)** by SilyNoMeta: https://github.com/SilyNoMeta/dlssg_for_sm86
           - **NVSmooth30** by ItsAdeline (Smooth Motion unlocker for RTX 30 series): https://github.com/ItsAdeline/NVSmooth30
@@ -1561,7 +1561,7 @@ jobs:
           - **REFramework (XeFG fork)** by onehoon: https://github.com/onehoon/REFramework
           
           ---
-          Built with OptiScaler-DLSSNR-PreSR-Multipass `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
+          Built with OptiScaler-NR-PreSR-MFG `${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_version || needs.check-versions.outputs.latest_version }}` (${{ steps.release_meta.outputs.display_type }})
         files: |
           Output/*.exe
           Output/*.zip

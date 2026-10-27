@@ -28,7 +28,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 - **Multi-Frame Generation (MFG) & XeFG:** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. Intel Xe Frame Generation (XeFG) is also supported via the bundled native XeMFG unlocker. DLSS Enabler headless is also bundled as an alternative companion option.
 - **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation, Xe Frame Generation, or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
-- **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for my OptiScaler-DLSSNR-PreSR-Multipass backend (based on wilsjo2), preserving native SM75/SM86 MFG unlocking, pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
+- **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for my OptiScaler-NR-PreSR-MFG backend (based on wilsjo2), preserving native SM75/SM86 MFG unlocking, pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
 - **Dual Release Format:** All-in-one automated Setup installer (`.exe`) and clean standalone manual archive (`.zip`).
 
@@ -68,7 +68,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 
 ## 🚀 Automated CI Builds
 
-This repository automatically tracks and synchronizes with upstream [OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass):
+This repository automatically tracks and synchronizes with upstream [OptiScaler-NR-PreSR-MFG](https://github.com/ShyVortex/OptiScaler-NR-PreSR-MFG):
 1. Checks for new releases every 3 hours.
 2. Packages the latest upscaler binaries, neural rendering forwarders, and companion libraries.
 3. Automatically builds and publishes both `.exe` installer and `.zip` standalone manual packages on new releases.
@@ -80,7 +80,7 @@ This repository automatically tracks and synchronizes with upstream [OptiScaler-
 To build the standalone package or installer locally:
 
 ```powershell
-# 1. Download latest OptiScaler-DLSSNR-PreSR-Multipass and package standalone zip
+# 1. Download latest OptiScaler-NR-PreSR-MFG and package standalone zip
 .\build-optiscaler.ps1 -DownloadLatest -CreateStandaloneZip
 
 # 2. Compile Inno Setup installer (requires Inno Setup 6.2+)
@@ -105,8 +105,8 @@ Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 
 ## 📜 Credits
 
-- **[OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/ShyVortex/OptiScaler-DLSSNR-PreSR-Multipass)** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2)
-- **[OptiScaler-DLSSNR-PreSR-Multipass (Upstream)](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** by wilsjo2
+- **[OptiScaler-NR-PreSR-MFG](https://github.com/ShyVortex/OptiScaler-NR-PreSR-MFG)** by ShyVortex (preserving SM75/SM86 MFG unlocker, based on wilsjo2)
+- **[OptiScaler-DLSSNR-PreSR-Multipass](https://github.com/wilsjo2/OptiScaler-DLSSNR-PreSR-Multipass)** by wilsjo2
 - **[dlssg_for_sm86](https://github.com/sdli1995/dlssg_for_sm86)** by sdli1995
 - **[dlssg_for_sm86 (Dynamic MFG)](https://github.com/SilyNoMeta/dlssg_for_sm86)** by SilyNoMeta
 - **[NVSmooth30](https://github.com/ItsAdeline/NVSmooth30)** by ItsAdeline — Smooth Motion unlocker for RTX 30 series GPUs (SM86)
