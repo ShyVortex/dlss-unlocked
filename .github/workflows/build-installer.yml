@@ -484,6 +484,7 @@ jobs:
           Dll version/OptiScaler.dll
           Dll version/nvngx.dll_dlssnr.dll
           Dll version/OptiScaler.ini.template
+          Dll version/nvsmooth30.package.dll
           Dll version/libxess.dll
           Dll version/libxess_dx11.dll
           Dll version/libxess_fg.dll
@@ -497,11 +498,11 @@ jobs:
           Dll version/nvfp4
           DLLSG mod/DisableNvidiaSignatureChecks.reg
           DLLSG mod/RestoreNvidiaSignatureChecks.reg
-        key: optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-${{ hashFiles('Dll version/nvngx.ini') }}
+        key: optiscaler-v5-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-${{ hashFiles('Dll version/nvngx.ini') }}
         restore-keys: |
-          optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-
-          optiscaler-v4-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
-          optiscaler-v4-
+          optiscaler-v5-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_hash || needs.check-versions.outputs.latest_hash }}-
+          optiscaler-v5-${{ matrix.build_type == 'nightly' && needs.check-versions.outputs.nightly_filename || needs.check-versions.outputs.latest_filename }}-
+          optiscaler-v5-
 
     - name: Download and extract OptiScaler-NR-PreSR-MFG
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
@@ -726,14 +727,14 @@ jobs:
             }
         }
 
-        # Copy nvsmooth30.dll: prioritize OptiScaler package version, fall back to local SM86/smooth-motion.asi
+        # Keep the package's nvsmooth30.dll (cached with the package); the "Select NVSmooth30" step picks what ships
         $foundNvSmooth = Get-ChildItem -Path $extractDir -Filter "nvsmooth30.dll" -Recurse -File | Select-Object -First 1
         if ($foundNvSmooth) {
-            Copy-Item -Path $foundNvSmooth.FullName -Destination "Dll version\nvsmooth30.dll" -Force
-            Write-Host "Copied nvsmooth30.dll from OptiScaler package to Dll version\nvsmooth30.dll"
-        } elseif (Test-Path "SM86\smooth-motion.asi") {
-            Copy-Item -Path "SM86\smooth-motion.asi" -Destination "Dll version\nvsmooth30.dll" -Force
-            Write-Host "Copied SM86\smooth-motion.asi to Dll version\nvsmooth30.dll (OptiScaler package did not include nvsmooth30.dll)"
+            Copy-Item -Path $foundNvSmooth.FullName -Destination "Dll version\nvsmooth30.package.dll" -Force
+            Write-Host "Saved the OptiScaler package's nvsmooth30.dll as Dll version\nvsmooth30.package.dll"
+        } elseif (Test-Path "Dll version\nvsmooth30.package.dll") {
+            Remove-Item -Path "Dll version\nvsmooth30.package.dll" -Force
+            Write-Host "OptiScaler package has no nvsmooth30.dll; removed the stale package copy"
         }
 
         # Save hash file for future cache verification
@@ -741,6 +742,14 @@ jobs:
             Set-Content -Path $hashFile -Value $targetHash -Encoding ASCII
             Write-Host "Saved OptiScaler asset hash ($targetHash) to $hashFile"
         }
+
+    # Runs on every build, cache hit or not: picks the newer NVSmooth30 of the package copy and SM86/smooth-motion.asi
+    - name: Select NVSmooth30
+      if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
+      shell: powershell
+      run: |
+        $packageDll = if (Test-Path "Dll version\nvsmooth30.package.dll") { "Dll version\nvsmooth30.package.dll" } else { "" }
+        & .\tools\Select-NvSmooth30.ps1 -PackageDll $packageDll -AsiPath "SM86\smooth-motion.asi" -Destination "Dll version\nvsmooth30.dll"
 
     - name: Cache NVIDIA Streamline
       if: (matrix.build_type == 'nightly' && needs.check-versions.outputs.should_build_nightly == 'true') || (matrix.build_type == 'latest' && needs.check-versions.outputs.should_build_latest == 'true')
