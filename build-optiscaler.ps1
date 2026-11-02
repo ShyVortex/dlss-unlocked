@@ -207,15 +207,10 @@ if ($optiHashToSave) {
     Set-Content -Path (Join-Path $DllVersionDir ".optiscaler_hash") -Value $optiHashToSave -Encoding ASCII
 }
 
-# Copy nvsmooth30.dll: prioritize OptiScaler package version, fall back to local SM86/smooth-motion.asi
+# nvsmooth30.dll: the newer NVSmooth30 of the OptiScaler package copy and SM86/smooth-motion.asi ships
 $foundNvSmooth = Get-ChildItem -Path $ExtractDir -Filter "nvsmooth30.dll" -Recurse -File | Select-Object -First 1
-if ($foundNvSmooth) {
-    Copy-Item -Path $foundNvSmooth.FullName -Destination (Join-Path $DllVersionDir "nvsmooth30.dll") -Force
-    Write-Host "  nvsmooth30.dll (from OptiScaler package) -> $DllVersionDir\nvsmooth30.dll" -ForegroundColor Gray
-} elseif (Test-Path "SM86\smooth-motion.asi") {
-    Copy-Item -Path "SM86\smooth-motion.asi" -Destination (Join-Path $DllVersionDir "nvsmooth30.dll") -Force
-    Write-Host "  SM86\smooth-motion.asi -> $DllVersionDir\nvsmooth30.dll (OptiScaler package did not include nvsmooth30.dll)" -ForegroundColor Gray
-}
+$packageNvSmooth = if ($foundNvSmooth) { $foundNvSmooth.FullName } else { "" }
+& (Join-Path $PSScriptRoot "tools\Select-NvSmooth30.ps1") -PackageDll $packageNvSmooth -AsiPath "SM86\smooth-motion.asi" -Destination (Join-Path $DllVersionDir "nvsmooth30.dll")
 
 # Handle NVIDIA Streamline download & extraction
 $StreamlineDir = Join-Path $DllVersionDir "streamline"
