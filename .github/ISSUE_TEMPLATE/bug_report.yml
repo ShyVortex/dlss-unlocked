@@ -165,7 +165,7 @@ body:
           required: true
         - label: "If reporting an issue with the RTX 20/30 Unlocker, I have attached or pasted the required `dlssg_sm86.log`."
           required: false
-        - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."`
+        - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."
           required: false
         - label: "I understand that issues missing required diagnostic information will be rejected and closed."
           required: true
