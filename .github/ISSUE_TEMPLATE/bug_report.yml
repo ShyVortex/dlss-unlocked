@@ -9,7 +9,9 @@ body:
         Thank you for reporting an issue! Please fill out **all required sections** below.
         > ⚠️ **Incomplete issues that do not follow this template or lack diagnostic logs will be closed.**
         >
-        > 🐧 **Linux / Proton Users**: If reporting an issue on Linux, you **must** use the `PROTON_LOG=1` launch option in Steam and upload the resulting Proton log generated in your user's home folder (`~/steam-<appid>.log`).
+        > ✳️ **RTX 20/30 Unlocker**: if reporting an issue with the RTX 20/30 Unlocker, you **must** set `AmpereMfgLogLevel=3` in `OptiScaler.ini` to enable detailed logging for frame generation and include the resulting `dlssg_sm86.log` file located in `OptiScaler/dlssg_sm86/dlssg_sm86/logs/`.
+        >
+        > 🐧 **Linux / Proton Users**: if reporting an issue on Linux, you **must** use the `PROTON_LOG=1` launch option in Steam and upload the resulting Proton log generated in your user's home folder (`~/steam-<appid>.log`).
 
   - type: dropdown
     id: os
@@ -108,9 +110,17 @@ body:
   - type: textarea
     id: logs
     attributes:
-      label: 10. Diagnostic Logs & Configuration (OptiScaler.log, OptiScaler.ini, and Proton Log)
+      label: 10. Diagnostic Logs & Configuration (OptiScaler.log, OptiScaler.ini, dlssg_sm86.log and Proton Log)
       description: |
-        Please paste the contents of `OptiScaler.log` and your `OptiScaler.ini` below (or drag and drop the files).
+        Please paste the contents of required logs and `OptiScaler.ini` below (or drag and drop the files).
+
+        **General Requirement**:
+        Before uploading, ensure that you have forced max level of logging in 'OptiScaler.ini' by setting `LogLevel=0` and then reproducing the issue to generate detailed logs.
+
+        ✳️ **RTX 20/30 Unlocker Requirement**:
+        If you are reporting an issue with the RTX 20/30 Unlocker
+        - set 'AmpereMfgLogLevel=3' in 'OptiScaler.ini' to enable detailed logging for frame generation.
+        - please also include the `dlssg_sm86.log` file located in `OptiScaler/dlssg_sm86/dlssg_sm86/logs/`.
         
         🐧 **Linux / Proton Requirement**:
         If you are on Linux, you **must** use the `PROTON_LOG=1` launch option when running the game (e.g. `PROTON_LOG=1 %command%`) and upload or paste the Proton log generated in your user home folder (`~/steam-<appid>.log`).
@@ -124,7 +134,11 @@ body:
         ```
 
         ```text
-        --- For Linux: Paste or drag and drop Proton log (~/steam-<appid>.log) here ---
+        --- For RTX 20/30 Unlocker: paste dlssg_sm86.log here ---
+        ```
+
+        ```text
+        --- For Linux: paste or drag and drop Proton log (~/steam-<appid>.log) here ---
         ```
     validations:
       required: true
@@ -145,9 +159,13 @@ body:
       options:
         - label: "I have confirmed this issue is reproducible on the latest DLSS Unlocked version."
           required: true
+        - label: "I have confirmed that this issue is not caused by a third-party mod or overlay."
+          required: true
         - label: "I have attached or pasted the required `OptiScaler.log` and `OptiScaler.ini`."
           required: true
-        - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."
+        - label: "If reporting an issue with the RTX 20/30 Unlocker, I have attached or pasted the required `dlssg_sm86.log`."
+          required: false
+        - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."`
           required: false
         - label: "I understand that issues missing required diagnostic information will be rejected and closed."
           required: true
