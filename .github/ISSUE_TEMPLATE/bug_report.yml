@@ -9,6 +9,8 @@ body:
         Thank you for reporting an issue! Please fill out **all required sections** below.
         > ⚠️ **Incomplete issues that do not follow this template or lack diagnostic logs will be closed.**
         >
+        > 📎 **Logs must be attached as files**, not pasted as text: pasted logs get cut off and are hard to search.
+        >
         > ✳️ **RTX 20/30 Unlocker**: if reporting an issue with the RTX 20/30 Unlocker, you **must** set `AmpereMfgLogLevel=3` in `OptiScaler.ini` to enable detailed logging for frame generation and include the resulting `dlssg_sm86.log` file located in `OptiScaler/dlssg_sm86/dlssg_sm86/logs/`.
         >
         > 🐧 **Linux / Proton Users**: if reporting an issue on Linux, you **must** use the `PROTON_LOG=1` launch option in Steam and upload the resulting Proton log generated in your user's home folder (`~/steam-<appid>.log`).
@@ -112,7 +114,11 @@ body:
     attributes:
       label: 10. Diagnostic Logs & Configuration (OptiScaler.log, OptiScaler.ini, dlssg_sm86.log and Proton Log)
       description: |
-        Please paste the contents of required logs and `OptiScaler.ini` below (or drag and drop the files).
+        📎 **Attach the files** by dragging and dropping them into the box below (or click the box, then use the attachment button at the bottom of it). **Do not paste their contents**: GitHub cuts long text, and the part that gets cut is usually the one with the error.
+
+        - GitHub does not accept `.ini` files: rename `OptiScaler.ini` to `OptiScaler.txt` before attaching it.
+        - Files larger than 25 MB (for example a long Proton log) must be compressed into a `.zip` first.
+        - You can also put all the files in a single `.zip`.
 
         **General Requirement**:
         Before uploading, ensure that you have forced max level of logging in 'OptiScaler.ini' by setting `LogLevel=0` and then reproducing the issue to generate detailed logs.
@@ -120,26 +126,16 @@ body:
         ✳️ **RTX 20/30 Unlocker Requirement**:
         If you are reporting an issue with the RTX 20/30 Unlocker
         - set 'AmpereMfgLogLevel=3' in 'OptiScaler.ini' to enable detailed logging for frame generation.
-        - please also include the `dlssg_sm86.log` file located in `OptiScaler/dlssg_sm86/dlssg_sm86/logs/`.
-        
+        - please also attach the `dlssg_sm86.log` file located in `OptiScaler/dlssg_sm86/dlssg_sm86/logs/`.
+
         🐧 **Linux / Proton Requirement**:
-        If you are on Linux, you **must** use the `PROTON_LOG=1` launch option when running the game (e.g. `PROTON_LOG=1 %command%`) and upload or paste the Proton log generated in your user home folder (`~/steam-<appid>.log`).
+        If you are on Linux, you **must** use the `PROTON_LOG=1` launch option when running the game (e.g. `PROTON_LOG=1 %command%`) and attach the Proton log generated in your user home folder (`~/steam-<appid>.log`).
       placeholder: |
-        ```text
-        --- Paste OptiScaler.log here ---
-        ```
-
-        ```ini
-        --- Paste OptiScaler.ini here ---
-        ```
-
-        ```text
-        --- For RTX 20/30 Unlocker: paste dlssg_sm86.log here ---
-        ```
-
-        ```text
-        --- For Linux: paste or drag and drop Proton log (~/steam-<appid>.log) here ---
-        ```
+        Drag and drop the files here:
+        - OptiScaler.log
+        - OptiScaler.ini (renamed to OptiScaler.txt)
+        - dlssg_sm86.log (RTX 20/30 Unlocker only)
+        - steam-<appid>.log (Linux only)
     validations:
       required: true
 
@@ -161,9 +157,9 @@ body:
           required: true
         - label: "I have confirmed that this issue is not caused by a third-party mod or overlay."
           required: true
-        - label: "I have attached or pasted the required `OptiScaler.log` and `OptiScaler.ini`."
+        - label: "I have attached (not pasted) the required `OptiScaler.log` and `OptiScaler.ini` as files."
           required: true
-        - label: "If reporting an issue with the RTX 20/30 Unlocker, I have attached or pasted the required `dlssg_sm86.log`."
+        - label: "If reporting an issue with the RTX 20/30 Unlocker, I have attached the required `dlssg_sm86.log` as a file."
           required: false
         - label: "If reporting a Linux issue, I have used the `PROTON_LOG=1` launch option and uploaded the generated Proton log from my home folder (`~/steam-<appid>.log`)."
           required: false
