@@ -99,12 +99,7 @@ To build the standalone package or installer locally:
 
 ## Known Issues & Troubleshooting
 
-### 1. Overlay Crash on Linux / Proton (DirectX 12)
-Some DX12 games may crash (`VK_ERROR_DEVICE_LOST`) under Wine / Proton when opening the OptiScaler in-game overlay menu:
-- **Fix:** Set `OverlayMenu=false` under `[Menu]` in `OptiScaler.ini`.
-- **Note:** This allows the overlay to render via the game's internal render pipeline without crashing the Vulkan presentation queue, though the menu colors may be affected by the game's auto-exposure or tone-mapping. You can adjust colors or switch to a dark theme under **Menu Theme and Color** in the overlay.
-
-### 2. Resident Evil Requiem & Capcom RE Engine Games
+### Resident Evil Requiem & Capcom RE Engine Games
 Capcom's RE Engine enforces strict memory and swapchain integrity checks:
 - **Crash on Boot (`re9.exe!0x140000000...`):**
   - Use `dxgi.dll` as the proxy name and install **[REFramework](https://github.com/praydog/REFramework)** (`dinput8.dll`) into the game root directory alongside `dxgi.dll`. REFramework safely hooks into the engine early and bypasses Capcom's VTable integrity checks.
