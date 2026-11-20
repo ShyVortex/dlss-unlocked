@@ -11,7 +11,8 @@ Usage: bash install.sh <install|upgrade|uninstall> <game_exe_dir> [options]
   uninstall          Remove everything a previous install added and restore backed-up files.
 
 Options:
-  --proxy dxgi|version|winmm   DLL name OptiScaler is installed as (default: dxgi)
+  --proxy NAME                 DLL name OptiScaler is installed as: dxgi (default), version, winmm,
+                               dbghelp, d3d12, wininet or winhttp
   --repatch                    Also install the patched REFramework as dinput8.dll (RE Engine games)
   --reset-config               Overwrite an existing OptiScaler.ini (kept by default on upgrade)
 EOF
@@ -33,7 +34,7 @@ while [ $# -gt 0 ]; do
     esac
     shift
 done
-case $proxy in dxgi|version|winmm) ;; *) die "--proxy must be dxgi, version or winmm" ;; esac
+case $proxy in dxgi|version|winmm|dbghelp|d3d12|wininet|winhttp) ;; *) die "--proxy must be dxgi, version, winmm, dbghelp, d3d12, wininet or winhttp" ;; esac
 case $cmd in install|upgrade|uninstall) ;; *) die "unknown command: $cmd" ;; esac
 [ -d "$game" ] || die "game folder not found: $game"
 
@@ -71,7 +72,7 @@ new=$(mktemp); trap 'rm -f "$new"' EXIT
 while IFS= read -r -d '' path; do
     rel=${path#"$src"/}
     case $rel in
-        install.sh) continue ;;
+        install.sh|HOW-TO-INSTALL.txt) continue ;;
         dxgi.dll) dest=$proxy.dll ;;
         REPatch/dinput8.dll) [ $repatch = 1 ] || continue; dest=dinput8.dll ;;
         REPatch/*) continue ;;
@@ -90,6 +91,8 @@ done < <(find "$src" -type f -print0)
 [ -s "$new" ] || die "no payload found next to install.sh"
 mv "$new" "$manifest"
 
+overrides=$proxy
+[ $repatch = 1 ] && overrides="$overrides,dinput8"
 echo "Installed to $game (proxy: $proxy.dll)"
 echo "Steam launch options:"
-echo "  WINEDLLOVERRIDES=\"$proxy=n,b\" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%"
+echo "  WINEDLLOVERRIDES=\"$overrides=n,b\" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%"

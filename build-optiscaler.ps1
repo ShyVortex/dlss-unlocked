@@ -659,8 +659,9 @@ if ($CreateStandaloneZip) {
         Write-Host "  REPatch -> $repatchSubDir" -ForegroundColor Gray
     }
 
-    # 5. Linux install/upgrade/uninstall helper
+    # 5. Linux install/upgrade/uninstall helper and install instructions
     Copy-Item -Path "install.sh" -Destination $manualZipDir -Force
+    Copy-Item -Path "HOW-TO-INSTALL.txt" -Destination $manualZipDir -Force
 
     if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" | Out-Null }
     $effectiveTag = if ($TagName -and $TagName.Trim() -ne "") { $TagName.Trim() } elseif ($OptiScalerVersion) { $OptiScalerVersion } else { "latest" }

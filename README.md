@@ -44,14 +44,14 @@ Get the latest release from the **[Releases](../../releases)** page.
 3. Complete the installation wizard.
 
 ### Option B: Standalone Package (`.zip`) — Recommended for Linux / Manual Installs
-1. Download `dlss-unlocked-standalone-*.zip`.
+1. Download `dlss-unlocked-standalone-*.zip`. Step-by-step instructions for Windows and Linux, plus guidance on choosing the DLL name (`dxgi.dll`, `version.dll`, `winmm.dll`), are in `HOW-TO-INSTALL.txt` inside the archive.
 2. **(Linux)** Extract the zip anywhere and run the bundled script with the folder containing the game `.exe`:
    ```bash
    bash install.sh install /path/to/game/bin/x64      # first install
    bash install.sh upgrade /path/to/game/bin/x64      # after downloading a newer zip (keeps your OptiScaler.ini)
    bash install.sh uninstall /path/to/game/bin/x64    # removes everything and restores backed-up files
    ```
-   Options: `--proxy dxgi|version|winmm` (default `dxgi`), `--repatch` (installs the patched REFramework as `dinput8.dll`), `--reset-config` (overwrite `OptiScaler.ini`). The script prints the matching Steam launch options when done.
+   Options: `--proxy dxgi|version|winmm|dbghelp|d3d12|wininet|winhttp` (default `dxgi`), `--repatch` (installs the patched REFramework as `dinput8.dll`), `--reset-config` (overwrite `OptiScaler.ini`). The script prints the matching Steam launch options when done.
 
    **Manual alternative (any OS):** extract the contents directly into your game's executable folder alongside the main game `.exe`:
    - **Root folder:** `dxgi.dll` *(rename to `version.dll` if using ReShade)*, `OptiScaler.ini`, `nvngx.dll_dlssnr.dll`, `nvngx_dlssnr.dll` (patched DLSS-NR)

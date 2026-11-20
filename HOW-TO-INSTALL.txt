@@ -1,0 +1,170 @@
+================================================================================
+DLSS UNLOCKED - HOW TO INSTALL (STANDALONE ZIP)
+================================================================================
+
+This archive contains everything the Setup installer (.exe) would install,
+for people who prefer to copy the files by hand or who play on Linux / Proton.
+
+Everything goes into the GAME EXECUTABLE FOLDER: the folder that holds the
+game's main .exe. For many games this is not the top-level install folder,
+for example:
+    Cyberpunk 2077\bin\x64\
+    <Game>\Binaries\Win64\          (Unreal Engine games)
+
+
+WHAT IS IN THIS ARCHIVE
+--------------------------------------------------------------------------------
+  dxgi.dll                 OptiScaler (the main DLL that loads everything else)
+  OptiScaler.ini           OptiScaler settings, pre-configured for DLSS Unlocked
+  nvngx.dll_dlssnr.dll     Neural Rendering forwarder
+  nvngx_dlssnr.dll         Patched DLSS-NR runtime
+  OptiScaler\              Companion modules (DLSS Enabler, DLSSG-to-FSR3,
+                           FidelityFX, XeSS, Smooth Motion, Streamline,
+                           native RTX 20/30 frame generation unlocker)
+  REPatch\                 Optional: patched REFramework for Capcom / RE Engine
+                           games (see REPatch\README.txt)
+  Licenses\                Third-party licenses and disclaimer
+  install.sh               Linux / Proton install, upgrade and uninstall script
+  HOW-TO-INSTALL.txt       This file
+
+
+================================================================================
+WINDOWS
+================================================================================
+
+Install
+-------
+1. Open the game executable folder (see above).
+2. If the game folder already has a file named dxgi.dll, see
+   "CHOOSING THE DLL NAME" below before you continue.
+3. Copy these items from the archive into that folder:
+       dxgi.dll
+       OptiScaler.ini
+       nvngx.dll_dlssnr.dll
+       nvngx_dlssnr.dll
+       OptiScaler\        (the whole folder)
+   You do not need to copy install.sh, HOW-TO-INSTALL.txt or Licenses\.
+4. Optional, Capcom / RE Engine games only: also copy REPatch\dinput8.dll
+   into the same folder.
+5. Start the game. Press the OptiScaler overlay key (Insert by default) in
+   game to check that it loaded and to change settings.
+
+Upgrade
+-------
+Delete the files and the OptiScaler\ folder from the previous version, then
+repeat the install steps with the new archive. Keep your old OptiScaler.ini
+if you changed settings and want to keep them.
+
+Uninstall
+---------
+Delete the files and the OptiScaler\ folder you copied in. If you renamed
+dxgi.dll, delete the renamed file (version.dll or winmm.dll) instead. If you
+renamed a game file to make room (for example dxgi-original.dll), change it
+back.
+
+
+================================================================================
+LINUX / PROTON
+================================================================================
+
+The included install.sh does the copying for you. It also:
+  - backs up any game file it would overwrite and restores it on uninstall,
+  - removes the previous version's files on upgrade, so none are left behind,
+  - keeps your OptiScaler.ini on upgrade,
+  - prints the Steam launch options that match your setup.
+
+Install
+-------
+1. Extract the archive anywhere (for example ~/Downloads/dlss-unlocked).
+2. Find the game executable folder. In Steam: right-click the game >
+   Manage > Browse local files, then open the folder that holds the .exe.
+3. Open a terminal in the extracted folder and run:
+
+       bash install.sh install "/path/to/game/bin/x64"
+
+   Options:
+       --proxy NAME                 Name to install OptiScaler as: dxgi, version,
+                                    winmm, dbghelp, d3d12, wininet or winhttp
+                                    (default: dxgi, see "CHOOSING THE DLL NAME")
+       --repatch                    Also install the patched REFramework as
+                                    dinput8.dll (Capcom / RE Engine games)
+       --reset-config               Replace an existing OptiScaler.ini
+
+4. Set the Steam launch options the script prints. With the default dxgi.dll
+   they are:
+
+       WINEDLLOVERRIDES="dxgi=n,b" PROTON_ENABLE_NVAPI=1 PROTON_NVIDIA_NVCUDA=1 %command%
+
+   The name in WINEDLLOVERRIDES must match the DLL name you installed, for
+   example "version=n,b" or "winmm=n,b". Without the override, Proton loads
+   its own built-in DLL and ignores OptiScaler.
+   PROTON_ENABLE_NVAPI and PROTON_NVIDIA_NVCUDA are needed on NVIDIA GPUs for
+   DLSS and for native frame generation on RTX 20/30 cards.
+
+Upgrade
+-------
+Extract the new archive and run:
+
+       bash install.sh upgrade "/path/to/game/bin/x64"
+
+Use the same --proxy and --repatch options you installed with.
+
+Uninstall
+---------
+       bash install.sh uninstall "/path/to/game/bin/x64"
+
+Then remove the launch options from Steam.
+
+Manual install on Linux
+-----------------------
+You can also copy the files by hand exactly as in the Windows steps, then set
+the launch options from step 4.
+
+
+================================================================================
+CHOOSING THE DLL NAME
+================================================================================
+
+The game has to load OptiScaler itself. OptiScaler does this by pretending to
+be a standard Windows DLL that the game loads anyway: Windows (and Proton)
+look in the game folder first, so a dxgi.dll placed there is loaded instead of
+the system one, and OptiScaler then passes every call on to the real DLL.
+
+OptiScaler works under any of these names:
+
+  dxgi.dll     DEFAULT. DXGI is the part of Windows that every DirectX 11 and
+               DirectX 12 game uses to create its window output (swapchain),
+               and it loads very early, before the game starts rendering.
+               OptiScaler needs to be in place by then to hook upscaling,
+               frame generation and its overlay. Because nearly all modern
+               DirectX games load dxgi.dll, it works in the widest range of
+               games, which is why DLSS Unlocked ships with this name.
+
+  version.dll  Use when something else already needs dxgi.dll, most often
+               ReShade or another mod, or when the game ships its own
+               dxgi.dll. Also a good choice for Vulkan games, which may not
+               load dxgi.dll at all.
+
+  winmm.dll    Fallback when neither dxgi.dll nor version.dll works, or when
+               both names are already taken by other mods.
+
+  dbghelp.dll, d3d12.dll, wininet.dll, winhttp.dll
+               Also supported. Use one of these when the game, or other mods,
+               already take all three names above, or when none of them get
+               OptiScaler loaded in a particular game.
+
+To use another name, rename dxgi.dll in the game folder to the name you want
+(on Linux, pass the name without ".dll" to install.sh with --proxy instead,
+and change WINEDLLOVERRIDES to match). Install only one copy: do not keep both
+dxgi.dll and version.dll from this archive in the same folder.
+
+If the game folder already has a DLL with the name you want to use and it is
+not from DLSS Unlocked, pick a different name from the list rather than
+overwriting it.
+
+
+================================================================================
+MORE HELP
+================================================================================
+Releases, documentation and bug reports:
+    https://github.com/ShyVortex/dlss-unlocked

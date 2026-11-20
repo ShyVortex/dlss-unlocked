@@ -1426,8 +1426,9 @@ jobs:
             Write-Host "Copied REPatch folder to standalone archive"
         }
 
-        # 5. Linux install/upgrade/uninstall helper
+        # 5. Linux install/upgrade/uninstall helper and install instructions
         Copy-Item -Path "install.sh" -Destination $manualZipDir -Force
+        Copy-Item -Path "HOW-TO-INSTALL.txt" -Destination $manualZipDir -Force
 
         # Ensure Output directory exists
         if (!(Test-Path "Output")) { New-Item -ItemType Directory -Path "Output" -Force }
