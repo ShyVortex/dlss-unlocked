@@ -174,22 +174,14 @@ begin
       Continue;
     end;
 
-    // Ensure External=true under [FrameGen]
-    if (Pos('External=', LineTrim) = 1) and (CurrentSection = 'FRAMEGEN') then
+    // Ensure MfgUnlock=true under [DLSSG]. MfgUnlocker stays auto: OptiScaler picks the RTX 40 unlock
+    // or the RTX 20/30 unlocker from the GPU and enters External FG mode by itself for RTX 20/30.
+    // External= is left as shipped: forcing it true would stop the RTX 40 unlock.
+    if (Pos('MfgUnlock=', LineTrim) = 1) and (CurrentSection = 'DLSSG') then
     begin
-      if LineTrim <> 'External=true' then
+      if LineTrim <> 'MfgUnlock=true' then
       begin
-        Lines[I] := 'External=true';
-        Modified := True;
-      end;
-    end;
-
-    // Ensure AmpereMfgUnlock=true under [DLSSG]
-    if (Pos('AmpereMfgUnlock=', LineTrim) = 1) and (CurrentSection = 'DLSSG') then
-    begin
-      if LineTrim <> 'AmpereMfgUnlock=true' then
-      begin
-        Lines[I] := 'AmpereMfgUnlock=true';
+        Lines[I] := 'MfgUnlock=true';
         Modified := True;
       end;
     end;

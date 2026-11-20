@@ -109,6 +109,11 @@ Extract the new archive and run:
 
 Use the same --proxy and --repatch options you installed with.
 
+Upgrade keeps your OptiScaler.ini. An OptiScaler.ini from an older DLSS
+Unlocked release has External=true under [FrameGen], which stops the RTX 40
+frame generation unlocker. On an RTX 40 card, add --reset-config once, or set
+External=false under [FrameGen] and MfgUnlock=true under [DLSSG] by hand.
+
 Uninstall
 ---------
        bash install.sh uninstall "/path/to/game/bin/x64"

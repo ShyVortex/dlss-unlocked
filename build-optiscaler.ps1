@@ -506,21 +506,18 @@ if (Test-Path $targetPath) {
     $optiIniContent = Get-Content $targetPath -Raw
     # Strip UTF-8 BOM if present
     $optiIniContent = $optiIniContent.TrimStart([char]0xFEFF)
-    # Remove any rogue AmpereMfgUnlock placed outside [DLSSG]
-    $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*\r?\n(?=[\s\S]*\[DLSSG\])', ''
-    if ($optiIniContent -match '(?m)^External\s*=') {
-        $optiIniContent = $optiIniContent -replace '(?m)^External\s*=.*', 'External=true'
+    # Turn on the DLSS MFG unlocker. MfgUnlocker stays auto: OptiScaler picks the RTX 40 unlock or the
+    # RTX 20/30 unlocker from the GPU, and switches to External FG mode by itself for RTX 20/30.
+    # Never force External=true here: it stops the RTX 40 unlock (it never runs in External FG mode)
+    # and puts AMD/Intel GPUs in External FG mode.
+    if ($optiIniContent -match '(?m)^MfgUnlock\s*=') {
+        $optiIniContent = $optiIniContent -replace '(?m)^MfgUnlock\s*=.*', 'MfgUnlock=true'
     } else {
-        $optiIniContent = $optiIniContent -replace '\[FrameGen\]', "[FrameGen]`r`nExternal=true"
-    }
-    if ($optiIniContent -match '(?m)^AmpereMfgUnlock\s*=') {
-        $optiIniContent = $optiIniContent -replace '(?m)^AmpereMfgUnlock\s*=.*', 'AmpereMfgUnlock=true'
-    } else {
-        $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nAmpereMfgUnlock=true"
+        $optiIniContent = $optiIniContent -replace '\[DLSSG\]', "[DLSSG]`r`nMfgUnlock=true"
     }
     $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
     [System.IO.File]::WriteAllText((Resolve-Path $targetPath).Path, $optiIniContent, $utf8NoBom)
-    Write-Host "Configured OptiScaler.ini (External=true, AmpereMfgUnlock=true, UTF8 without BOM)" -ForegroundColor Gray
+    Write-Host "Configured OptiScaler.ini (MfgUnlock=true, UTF8 without BOM)" -ForegroundColor Gray
 }
 
 if ($CreateStandaloneZip) {

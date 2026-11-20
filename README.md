@@ -26,7 +26,7 @@ Unlock **DLSS 3 Frame Generation (DLSS-G)**, **Multi-Frame Generation (MFG: 2X, 
 
 ## ✨ Features
 
-- **Multi-Frame Generation (MFG) & XeFG:** Out of the box, DLSS Unlocked primarily targets GeForce RTX 20 and 30 series GPUs (Turing & Ampere) via the native `dlssg_sm86` unlocker. RTX 40 series (Ada Lovelace) users can easily switch to the Ada MFG unlocker (`AdaMfgUnlock`) directly via the OptiScaler in-game overlay or `OptiScaler.ini`. Intel Xe Frame Generation (XeFG) is also supported via the bundled native XeMFG unlocker. DLSS Enabler headless is also bundled as an alternative companion option.
+- **Multi-Frame Generation (MFG) & XeFG:** Out of the box, the DLSS MFG unlocker is on and picks itself from your GPU: the native `dlssg_sm86` unlocker on GeForce RTX 20 and 30 series (Turing & Ampere), the RTX 40 MFG unlock on RTX 40 series (Ada Lovelace). Everything is in the **DLSS Multi-Frame Generation (MFG)** section of the OptiScaler in-game overlay, or under `[DLSSG]` (`MfgUnlock`, `MfgUnlocker`) in `OptiScaler.ini`. Intel Xe Frame Generation (XeFG) is also supported via the bundled native XeMFG unlocker. DLSS Enabler headless is also bundled as an alternative companion option.
 - **DLSS-G Frame Generation Bridge:** Seamlessly translates NVIDIA Streamline DLSS-G calls to native DLSS Frame Generation, Xe Frame Generation, or AMD FidelityFX FSR 3.1 Frame Generation via OptiScaler.
 - **Neural Rendering (DLSS-NR & Pre-SR Multipass):** Full support for my OptiScaler-NR-PreSR-MFG backend (based on wilsjo2), preserving native SM75/SM86 MFG unlocking, pre-SR multipass neural rendering, improved DLSS 5 compatibility, and forwarder.
 - **Linux / Proton Support:** Clean modular layout without recursive driver deadlocks.
@@ -70,7 +70,7 @@ Get the latest release from the **[Releases](../../releases)** page.
 ## 🎮 Supported GPUs
 
 - **NVIDIA GeForce RTX 20xx / 30xx (Turing & Ampere):** Enabled out of the box with the bundled `dlssg_sm86` native MFG unlocker.
-- **NVIDIA GeForce RTX 40xx (Ada Lovelace):** Fully supported; can switch to the Ada MFG unlocker (`AdaMfgUnlock=true`) or native DLSS FG via the in-game overlay or `OptiScaler.ini`.
+- **NVIDIA GeForce RTX 40xx (Ada Lovelace):** Enabled out of the box with the RTX 40 MFG unlock (up to 6X); the multiplier ceiling and FG preset are in the DLSS Multi-Frame Generation (MFG) overlay section.
 
 ---
 
