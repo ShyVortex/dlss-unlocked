@@ -972,7 +972,7 @@ jobs:
         }
 
         if (-not $zipUrl) {
-            $tagToUse = if ($releaseTag) { $releaseTag } else { "0.4.1" }
+            $tagToUse = if ($releaseTag) { $releaseTag } else { "0.4.2" }
             $zipUrl = "https://github.com/$repo/releases/download/$tagToUse/dlssg-release-$tagToUse-x64.zip"
         }
 
@@ -1132,7 +1132,7 @@ jobs:
             )
             $checksumContent = $checksumLines -join "`r`n"
             Set-Content -Path (Join-Path $dlssgDir "checksums.sha256") -Value $checksumContent -Encoding ASCII
-            Write-Host "Updated dlssg_sm86 0.4.1 modular files from $dlssgRepo (Hash: $remoteHash)."
+            Write-Host "Updated dlssg_sm86 0.4.2 modular files from $dlssgRepo (Hash: $remoteHash)."
             Write-Host "Checksums:"
             Write-Host $checksumContent
         }

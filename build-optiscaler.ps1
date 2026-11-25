@@ -3,7 +3,7 @@
 
 param(
     [string]$OptiScalerPath = "",
-    [string]$OptiScalerVersion = "v0.9.95",
+    [string]$OptiScalerVersion = "v0.9.96",
     [string]$TagName = "",
     [string]$StreamlinePath = "",
     [string]$StreamlineUrl = "https://github.com/NVIDIA-RTX/Streamline/releases/download/v2.14.16/streamline-sdk-v2.14.16.zip",
@@ -11,7 +11,7 @@ param(
     [string]$OriginalDlssnrUrl = "https://www.dropbox.com/scl/fi/77w2lo8dm7inwboafznos/nvngx_dlssnr_original.dll?rlkey=kuvg1yt7qi89kri3o4wyjhwgd&st=uwov3buy&dl=1",
     [string]$StreamlineDlssNrUrl = "https://files.catbox.moe/sckb7i.dll",
     [string]$DlssgSm86Source = "https://github.com/sdli1995/dlssg_for_sm86",
-    [string]$DlssgSm86ReleaseZipUrl = "https://github.com/sdli1995/dlssg_for_sm86/releases/download/0.4.1/dlssg-release-0.4.1-x64.zip",
+    [string]$DlssgSm86ReleaseZipUrl = "https://github.com/sdli1995/dlssg_for_sm86/releases/download/0.4.2/dlssg-release-0.4.2-x64.zip",
     [switch]$DownloadLatest = $false,
     [switch]$CreateStandaloneZip = $false
 )
@@ -360,7 +360,7 @@ if (-not $isLocalSource) {
         } catch {}
     }
 } else {
-    $remoteHash = "local-0.4.1"
+    $remoteHash = "local-0.4.2"
 }
 
 $filesExist = (Test-Path $targetDlssgDll) -and
